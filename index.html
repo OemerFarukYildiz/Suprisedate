@@ -1,0 +1,4526 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Surprise Date</title>
+  <style>
+    /* ═══════════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════════ */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      overflow: hidden;
+      background: #000;
+      font-family: 'Georgia', serif;
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      height: 100vh;
+      height: -webkit-fill-available;
+    }
+    canvas#game-canvas {
+      display: block;
+      position: fixed;
+      top: 0; left: 0;
+    }
+    .scene {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+    .scene.active { opacity: 1; }
+
+    /* ═══ FADE TRANSITION ═══ */
+    #fade {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #000;
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+    #fade.active { opacity: 1; pointer-events: all; }
+
+    /* ═══════════════════════════════════════════
+       SCENE 1: INTRO
+       ═══════════════════════════════════════════ */
+    #scene-intro {
+      background: #0a0a0a;
+      z-index: 200;
+    }
+    #scene-intro h1 {
+      color: #ff9f0a;
+      font-size: 36px;
+      font-weight: 400;
+      letter-spacing: 5px;
+      margin-bottom: 8px;
+      animation: titleGlow 2.5s ease-in-out infinite;
+    }
+    #scene-intro .subtitle {
+      color: rgba(255,255,255,0.35);
+      font-size: 12px;
+      letter-spacing: 4px;
+      margin-bottom: 50px;
+    }
+    #scene-intro button {
+      background: transparent;
+      border: 1px solid #ff9f0a;
+      color: #ff9f0a;
+      padding: 16px 55px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-family: inherit;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    #scene-intro button:active {
+      background: #ff9f0a;
+      color: #000;
+      box-shadow: 0 0 30px rgba(255,159,10,0.5);
+    }
+    .sparkle {
+      position: absolute;
+      width: 4px; height: 4px;
+      background: #ff9f0a;
+      border-radius: 50%;
+      animation: sparkleFloat 3s ease-in-out infinite;
+      opacity: 0;
+    }
+    @keyframes titleGlow {
+      0%, 100% { text-shadow: 0 0 20px rgba(255,159,10,0.4); }
+      50% { text-shadow: 0 0 50px rgba(255,159,10,0.8), 0 0 80px rgba(255,159,10,0.3); }
+    }
+    @keyframes sparkleFloat {
+      0% { opacity: 0; transform: translateY(0) scale(0); }
+      20% { opacity: 1; transform: translateY(-10px) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(0); }
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 2: WAKE UP
+       ═══════════════════════════════════════════ */
+    #scene-wakeup {
+      background: #0d0d15;
+      overflow: hidden;
+    }
+    .wakeup-bed {
+      width: 200px; height: 120px;
+      background: #F5F0E8;
+      border-radius: 12px;
+      position: relative;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      margin-bottom: 40px;
+    }
+    .wakeup-blanket {
+      position: absolute;
+      bottom: 0; left: 5%; right: 5%;
+      height: 65%;
+      background: linear-gradient(135deg, #DC8A8A, #C77777);
+      border-radius: 8px 8px 10px 10px;
+    }
+    .wakeup-pillow {
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      width: 80px; height: 30px;
+      background: #FFE4E1;
+      border-radius: 20px;
+    }
+    .wakeup-mali {
+      position: absolute;
+      top: 15px; left: 50%;
+      transform: translateX(-50%);
+      width: 40px; height: 40px;
+      z-index: 2;
+    }
+    .mali-head {
+      width: 36px; height: 36px;
+      background: #d4956a;
+      border-radius: 50%;
+      position: relative;
+      margin: 0 auto;
+    }
+    .mali-hair {
+      position: absolute;
+      top: -4px; left: -4px; right: -4px;
+      height: 24px;
+      background: #1a1a1a;
+      border-radius: 22px 22px 0 0;
+    }
+    .mali-eyes {
+      position: absolute;
+      top: 16px; left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+    }
+    .mali-eye {
+      width: 5px; height: 2px;
+      background: #333;
+      border-radius: 2px;
+      transition: height 0.3s;
+    }
+    .mali-eye.open { height: 5px; border-radius: 50%; }
+    .wakeup-zzz {
+      position: absolute;
+      top: -20px; right: -20px;
+      color: rgba(255,255,255,0.3);
+      font-size: 18px;
+      animation: zzzFloat 2s ease-in-out infinite;
+    }
+    @keyframes zzzFloat {
+      0%, 100% { transform: translateY(0); opacity: 0.3; }
+      50% { transform: translateY(-15px); opacity: 0.7; }
+    }
+    .wakeup-cat {
+      position: absolute;
+      bottom: 30px; right: -60px;
+      width: 45px; height: 35px;
+      transition: right 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .wakeup-cat.jump { right: 20px; }
+    .cat-body {
+      width: 35px; height: 25px;
+      background: #8B7355;
+      border-radius: 40% 40% 30% 30%;
+      position: relative;
+    }
+    .cat-head {
+      width: 22px; height: 20px;
+      background: #8B7355;
+      border-radius: 50% 50% 40% 40%;
+      position: absolute;
+      top: -12px; left: -2px;
+    }
+    .cat-ear-l, .cat-ear-r {
+      position: absolute;
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 8px solid #8B7355;
+      top: -7px;
+    }
+    .cat-ear-l { left: 1px; }
+    .cat-ear-r { right: 1px; }
+    .cat-eyes {
+      position: absolute;
+      top: 7px; left: 3px;
+      display: flex; gap: 5px;
+    }
+    .cat-eye {
+      width: 4px; height: 4px;
+      background: #FFD700;
+      border-radius: 50%;
+    }
+    .cat-tail {
+      position: absolute;
+      right: -10px; bottom: 5px;
+      width: 15px; height: 4px;
+      background: #8B7355;
+      border-radius: 4px;
+      transform-origin: left center;
+      animation: tailWag 0.6s ease-in-out infinite;
+    }
+    @keyframes tailWag {
+      0%, 100% { transform: rotate(-15deg); }
+      50% { transform: rotate(15deg); }
+    }
+    .wakeup-text {
+      color: #fff;
+      font-size: 20px;
+      opacity: 0;
+      transition: opacity 0.8s;
+      margin-top: 20px;
+    }
+    .wakeup-text.show { opacity: 1; }
+    .bed-shake {
+      animation: bedShake 0.5s ease-in-out;
+    }
+    @keyframes bedShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 3: PHONE
+       ═══════════════════════════════════════════ */
+    #scene-phone {
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .phone-device {
+      width: 280px;
+      background: #1a1a1a;
+      border-radius: 36px;
+      padding: 28px 18px;
+      box-shadow: 0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.06);
+      animation: phoneSlideUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes phoneSlideUp {
+      from { transform: translateY(60px) scale(0.9); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .phone-time {
+      text-align: center;
+      color: #fff;
+      font-size: 44px;
+      font-weight: 200;
+      letter-spacing: 2px;
+    }
+    .phone-date-text {
+      text-align: center;
+      color: rgba(255,255,255,0.4);
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+    .msg-bubble {
+      background: #2c2c2e;
+      border-radius: 16px 16px 16px 4px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      color: #fff;
+      font-size: 13px;
+      line-height: 1.45;
+      opacity: 0;
+      transform: translateX(-15px);
+      animation: msgIn 0.4s forwards;
+    }
+    .msg-bubble .sender {
+      font-size: 10px;
+      color: #ff9f0a;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+    @keyframes msgIn {
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .phone-input-wrap {
+      margin-top: 14px;
+      opacity: 0;
+      animation: msgIn 0.4s 1.2s forwards;
+    }
+    .phone-input-wrap label {
+      color: rgba(255,255,255,0.5);
+      font-size: 11px;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .phone-input-wrap input {
+      width: 100%;
+      background: #2c2c2e;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+    .phone-input-wrap input:focus {
+      border-color: #ff9f0a;
+    }
+    .phone-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 13px;
+      background: linear-gradient(135deg, #ff9f0a, #ff6b35);
+      border: none;
+      border-radius: 22px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      opacity: 0;
+      animation: msgIn 0.4s 1.5s forwards;
+    }
+    .phone-btn:active { transform: scale(0.97); }
+
+    /* ═══════════════════════════════════════════
+       3D SCENE HUD & CONTROLS
+       ═══════════════════════════════════════════ */
+    #hud {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+    }
+    #hud.active { display: block; }
+    #prompt {
+      position: absolute;
+      bottom: 130px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-size: 14px;
+      padding: 10px 22px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #prompt.show { opacity: 1; }
+    #controls-info {
+      position: absolute;
+      bottom: 16px; left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.3);
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    /* Joystick */
+    #joystick-zone {
+      position: fixed;
+      bottom: 28px; left: 18px;
+      width: 120px; height: 120px;
+      z-index: 20;
+      display: none;
+    }
+    #joystick-zone.active { display: block; }
+    #joystick-base {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: 2px solid rgba(255,255,255,0.14);
+      position: relative;
+    }
+    #joystick-knob {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(255,159,10,0.7);
+      border: 2px solid rgba(255,200,80,0.5);
+      box-shadow: 0 0 14px rgba(255,159,10,0.35);
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #look-zone {
+      position: fixed;
+      top: 0; right: 0;
+      width: 55%; height: 100%;
+      z-index: 15;
+      display: none;
+    }
+    #look-zone.active { display: block; }
+    #interact-btn {
+      position: fixed;
+      bottom: 48px; right: 24px;
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(255,159,10,0.85);
+      border: 2px solid rgba(255,200,80,0.45);
+      box-shadow: 0 0 18px rgba(255,159,10,0.35);
+      color: #fff;
+      font-size: 22px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      cursor: pointer;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 0.3s, transform 0.3s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #interact-btn.visible { opacity: 1; transform: scale(1); display: flex; }
+    #interact-btn:active { transform: scale(0.9); background: rgba(255,120,0,0.95); }
+
+    /* ═══════════════════════════════════════════
+       SCENE 4: WINDOW VIEW (3D overlay btn)
+       ═══════════════════════════════════════════ */
+    #window-btn {
+      position: fixed;
+      bottom: 60px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,159,10,0.9);
+      color: #fff;
+      border: none;
+      padding: 14px 36px;
+      border-radius: 30px;
+      font-size: 15px;
+      font-family: inherit;
+      cursor: pointer;
+      z-index: 25;
+      display: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #window-btn:active { transform: translateX(-50%) scale(0.95); }
+    #window-msg {
+      position: fixed;
+      top: 80px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 25;
+      display: none;
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 7: MEETING
+       ═══════════════════════════════════════════ */
+    #scene-meeting {
+      background: transparent !important;
+    }
+    .meeting-omer {
+      width: 80px; height: 160px;
+      position: relative;
+      margin-bottom: 30px;
+    }
+    .omer-body {
+      width: 50px; height: 70px;
+      background: #2c5f8a;
+      border-radius: 12px 12px 6px 6px;
+      margin: 0 auto;
+    }
+    .omer-head {
+      width: 44px; height: 44px;
+      background: #d4956a;
+      border-radius: 50%;
+      margin: 0 auto 4px;
+      position: relative;
+    }
+    .omer-hair {
+      position: absolute;
+      top: -2px; left: 0; right: 0;
+      height: 20px;
+      background: #1a1a1a;
+      border-radius: 22px 22px 0 0;
+    }
+    .omer-smile {
+      position: absolute;
+      bottom: 10px; left: 50%;
+      transform: translateX(-50%);
+      width: 12px; height: 6px;
+      border-bottom: 2px solid #333;
+      border-radius: 0 0 10px 10px;
+    }
+    .omer-arm-wave {
+      position: absolute;
+      top: 10px; right: -18px;
+      width: 8px; height: 35px;
+      background: #2c5f8a;
+      border-radius: 4px;
+      transform-origin: top center;
+      animation: omerWave 0.7s ease-in-out infinite;
+    }
+    .omer-hand {
+      width: 14px; height: 14px;
+      background: #d4956a;
+      border-radius: 50%;
+      position: absolute;
+      bottom: -6px; left: -3px;
+    }
+    .omer-legs {
+      display: flex; gap: 6px;
+      justify-content: center;
+      margin-top: 2px;
+    }
+    .omer-leg {
+      width: 14px; height: 50px;
+      background: #1a1a1a;
+      border-radius: 4px;
+    }
+    @keyframes omerWave {
+      0%, 100% { transform: rotate(-20deg); }
+      50% { transform: rotate(30deg); }
+    }
+    .meeting-text {
+      color: #4a3520;
+      font-size: 22px;
+      text-align: center;
+      opacity: 0;
+      animation: fadeSlideUp 0.8s 0.5s forwards;
+    }
+    .meeting-hearts {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .float-heart {
+      position: absolute;
+      font-size: 20px;
+      animation: heartRise 3s ease-in forwards;
+      opacity: 0;
+    }
+    @keyframes heartRise {
+      0% { opacity: 0; transform: translateY(0) scale(0.5); }
+      20% { opacity: 1; transform: translateY(-30px) scale(1); }
+      100% { opacity: 0; transform: translateY(-200px) scale(0.3); }
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .meeting-continue {
+      margin-top: 40px;
+      padding: 14px 40px;
+      background: linear-gradient(135deg, #ff9f0a, #ff6b35);
+      border: none;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s 1.5s forwards;
+    }
+    .meeting-continue:active { transform: scale(0.95); }
+
+    /* ═══════════════════════════════════════════
+       SCENE 8: DATE SELECT
+       ═══════════════════════════════════════════ */
+    #scene-dateselect {
+      background: linear-gradient(135deg, #1a0f00, #2d1800, #1a0f00);
+      padding: 40px 20px;
+    }
+    .dateselect-title {
+      color: #ff9f0a;
+      font-size: 22px;
+      margin-bottom: 30px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    .date-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      max-width: 320px;
+    }
+    .date-card {
+      background: linear-gradient(135deg, rgba(255,159,10,0.12), rgba(255,107,53,0.08));
+      border: 1px solid rgba(255,159,10,0.25);
+      border-radius: 20px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: cardSlideIn 0.5s forwards;
+    }
+    .date-card:nth-child(1) { animation-delay: 0.2s; }
+    .date-card:nth-child(2) { animation-delay: 0.4s; }
+    .date-card:nth-child(3) { animation-delay: 0.6s; }
+    @keyframes cardSlideIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .date-card:active {
+      transform: scale(0.97);
+      border-color: #ff9f0a;
+      box-shadow: 0 0 25px rgba(255,159,10,0.3);
+    }
+    .date-card-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    .date-card-title {
+      color: #ff9f0a;
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .date-card-desc {
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 9: CAR DRIVE
+       ═══════════════════════════════════════════ */
+    #scene-cardrive {
+      background: transparent !important;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .drive-text {
+      position: absolute;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.7);
+      opacity: 0;
+      animation: fadeSlideUp 0.8s 0.5s forwards;
+      white-space: nowrap;
+      pointer-events: auto;
+      padding: 12px 24px;
+      background: rgba(0,0,0,0.35);
+      border-radius: 16px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 10: MINI GAMES
+       ═══════════════════════════════════════════ */
+    #scene-minigame {
+      background: linear-gradient(135deg, #1a0f00, #0a0a0a);
+      padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .mg-title {
+      color: #ff9f0a;
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .mg-complete-btn {
+      margin-top: 20px;
+      padding: 14px 40px;
+      background: linear-gradient(135deg, #ff9f0a, #ff6b35);
+      border: none;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: none;
+    }
+    .mg-complete-btn.show { display: block; }
+    .mg-complete-btn:active { transform: scale(0.95); }
+
+    /* ── Poetry Game ── */
+    .poetry-container { width: 100%; max-width: 340px; }
+    .poem-line {
+      color: #fff;
+      font-size: 16px;
+      line-height: 2.2;
+      text-align: center;
+    }
+    .poem-blank {
+      display: inline-block;
+      min-width: 80px;
+      border-bottom: 2px dashed rgba(255,159,10,0.5);
+      color: #ff9f0a;
+      margin: 0 4px;
+      padding: 2px 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .poem-blank.filled {
+      border-bottom-color: #4CAF50;
+      color: #4CAF50;
+    }
+    .poem-blank.wrong {
+      border-bottom-color: #f44;
+      animation: blankShake 0.4s;
+    }
+    @keyframes blankShake {
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+    .poem-options {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 14px 0;
+    }
+    .poem-option {
+      background: rgba(255,159,10,0.15);
+      border: 1px solid rgba(255,159,10,0.35);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .poem-option:active { background: rgba(255,159,10,0.4); }
+    .poem-option.correct {
+      background: rgba(76,175,80,0.3);
+      border-color: #4CAF50;
+    }
+    .poem-option.disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    /* ── Build-a-Bear Game ── */
+    .bear-container {
+      width: 100%;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .bear-workspace {
+      width: 260px;
+      height: 320px;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .bear-slot {
+      position: absolute;
+      border: 2px dashed rgba(255,159,10,0.3);
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+    .bear-slot.filled {
+      border-color: transparent;
+    }
+    .bear-part-placed {
+      position: absolute;
+      border-radius: 50%;
+      animation: partSnap 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes partSnap {
+      from { transform: scale(1.3); }
+      to { transform: scale(1); }
+    }
+    .bear-tray {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      width: 100%;
+    }
+    .bear-part {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #fff;
+      cursor: grab;
+      transition: transform 0.2s;
+      touch-action: none;
+    }
+    .bear-part:active { transform: scale(1.1); }
+    .bear-part.placed { opacity: 0.2; pointer-events: none; }
+    .bear-name-input {
+      margin-top: 16px;
+      display: none;
+      text-align: center;
+    }
+    .bear-name-input.show { display: block; }
+    .bear-name-input label {
+      color: rgba(255,255,255,0.6);
+      font-size: 13px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .bear-name-input input {
+      background: #2c2c2e;
+      border: 1px solid rgba(255,159,10,0.3);
+      border-radius: 12px;
+      padding: 10px 16px;
+      color: #fff;
+      font-size: 15px;
+      font-family: inherit;
+      text-align: center;
+      outline: none;
+      width: 200px;
+    }
+
+    /* ── Lego Game ── */
+    .lego-container {
+      width: 100%;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .lego-board {
+      display: grid;
+      gap: 2px;
+      margin-bottom: 20px;
+    }
+    .lego-cell {
+      width: 32px; height: 32px;
+      border-radius: 4px;
+      background: #2a2a2a;
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: all 0.2s;
+      position: relative;
+    }
+    .lego-cell.target {
+      background: rgba(255,59,48,0.15);
+      border-color: rgba(255,59,48,0.3);
+      animation: legoPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes legoPulse {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 10px rgba(255,59,48,0.3); }
+    }
+    .lego-cell.placed {
+      background: #e74c3c;
+      border-color: #c0392b;
+      box-shadow: inset 0 -2px 0 #c0392b, inset 0 2px 0 #f0867e;
+    }
+    .lego-cell.placed::after {
+      content: '';
+      position: absolute;
+      top: 4px; left: 50%;
+      transform: translateX(-50%);
+      width: 12px; height: 12px;
+      background: #e74c3c;
+      border-radius: 50%;
+      border: 1px solid #c0392b;
+      box-shadow: inset 0 2px 0 #f0867e;
+    }
+    .lego-counter {
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    /* ═══════════════════════════════════════════
+       SCENE 11: POST ACTIVITY (Cinema / Planetarium)
+       ═══════════════════════════════════════════ */
+    #scene-postactivity {
+      background: #0a0a0a;
+      overflow: hidden;
+    }
+
+    /* Cinema */
+    .cinema-scene {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .cinema-screen {
+      width: 80%;
+      max-width: 300px;
+      height: 180px;
+      background: linear-gradient(135deg, #1a1a3e, #2a2a5e);
+      border-radius: 8px;
+      box-shadow: 0 0 60px rgba(100,100,200,0.3), 0 0 120px rgba(100,100,200,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .cinema-screen::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.03) 50%, transparent 60%);
+      animation: screenGlare 4s linear infinite;
+    }
+    @keyframes screenGlare {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(100%); }
+    }
+    .cinema-seats {
+      display: flex;
+      gap: 30px;
+      margin-top: 40px;
+    }
+    .cinema-silhouette {
+      width: 30px; height: 45px;
+      background: #111;
+      border-radius: 15px 15px 5px 5px;
+      position: relative;
+    }
+    .cinema-silhouette::before {
+      content: '';
+      position: absolute;
+      top: -14px; left: 50%;
+      transform: translateX(-50%);
+      width: 20px; height: 20px;
+      background: #111;
+      border-radius: 50%;
+    }
+    .cinema-popcorn {
+      position: absolute;
+      bottom: 0;
+      font-size: 30px;
+    }
+    .cinema-text {
+      color: rgba(255,255,255,0.5);
+      font-size: 16px;
+      margin-top: 40px;
+      text-align: center;
+      opacity: 0;
+      animation: fadeSlideUp 0.8s 1s forwards;
+    }
+    .cinema-continue {
+      margin-top: 30px;
+      padding: 14px 40px;
+      background: linear-gradient(135deg, #ff9f0a, #ff6b35);
+      border: none;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s 2s forwards;
+    }
+
+    /* Planetarium */
+    .planetarium-scene {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: radial-gradient(ellipse at center, #0a0a2e 0%, #000010 100%);
+    }
+    #star-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    .planetarium-hint {
+      position: absolute;
+      top: 40px; left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      text-align: center;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    .planetarium-counter {
+      position: absolute;
+      top: 70px; left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,200,100,0.6);
+      font-size: 12px;
+      pointer-events: none;
+    }
+    .planetarium-btn {
+      position: absolute;
+      bottom: 60px; left: 50%;
+      transform: translateX(-50%);
+      padding: 14px 36px;
+      background: linear-gradient(135deg, #ff9f0a, #ff6b35);
+      border: none;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: none;
+    }
+    .planetarium-btn.show { display: block; animation: fadeSlideUp 0.5s forwards; }
+
+    /* ═══════════════════════════════════════════
+       SCENE 13: FINALE
+       ═══════════════════════════════════════════ */
+    #scene-finale {
+      background: radial-gradient(ellipse at center, #1a1030 0%, #0a0a1e 50%, #050510 100%);
+      padding: 30px 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .finale-title {
+      color: #ff9f0a;
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .finale-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 20px;
+    }
+    .finale-card {
+      background: rgba(255,159,10,0.08);
+      border: 1px solid rgba(255,159,10,0.2);
+      border-radius: 16px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .finale-card:active, .finale-card.selected {
+      border-color: #ff9f0a;
+      background: rgba(255,159,10,0.2);
+      box-shadow: 0 0 20px rgba(255,159,10,0.2);
+    }
+    .finale-card-name {
+      color: #ff9f0a;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .finale-card-desc {
+      color: rgba(255,255,255,0.4);
+      font-size: 12px;
+    }
+    .finale-send-btn {
+      padding: 14px 50px;
+      background: linear-gradient(135deg, #ff9f0a, #ff6b35);
+      border: none;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: none;
+      margin-top: 10px;
+    }
+    .finale-send-btn.show { display: block; }
+    .finale-send-btn:active { transform: scale(0.95); }
+    .finale-result {
+      display: none;
+      text-align: center;
+      margin-top: 30px;
+    }
+    .finale-result.show { display: block; }
+    .finale-result-text {
+      color: #fff;
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .finale-result-choice {
+      color: #ff9f0a;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .finale-end {
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+      margin-top: 20px;
+    }
+    .finale-hearts {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 40;
+      overflow: hidden;
+    }
+    .rain-heart {
+      position: absolute;
+      font-size: 18px;
+      animation: heartRain linear forwards;
+      opacity: 0.8;
+    }
+    @keyframes heartRain {
+      from { transform: translateY(-20px) rotate(0deg); opacity: 0.8; }
+      to { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════════
+       INTERACTION OVERLAYS (pet cat, makeup)
+       ═══════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════
+       SCENE: GOODBYE
+       ═══════════════════════════════════════════ */
+    #scene-goodbye {
+      background: linear-gradient(180deg, #1a1a3e 0%, #0a0a2e 100%);
+    }
+    .goodbye-scene {
+      text-align: center; position: relative;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; padding: 20px;
+    }
+    .goodbye-bg-stars {
+      position: fixed; top:0; left:0; right:0; bottom:0;
+      pointer-events: none; z-index: 0;
+    }
+    .goodbye-bg-stars span {
+      position: absolute; width: 3px; height: 3px;
+      background: #fff; border-radius: 50%;
+      animation: gbTwinkle 2s ease-in-out infinite alternate;
+    }
+    @keyframes gbTwinkle { 0% { opacity: 0.15; } 100% { opacity: 0.7; } }
+    .goodbye-figures {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 30px;
+      position: relative;
+      z-index: 2;
+    }
+    .gb-omer, .gb-mali {
+      position: relative;
+      transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .gb-head {
+      width: 56px; height: 56px;
+      background: #d4956a;
+      border-radius: 50%;
+      margin: 0 auto 4px;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .gb-hair {
+      position: absolute;
+      top: -3px; left: 2px; right: 2px; height: 26px;
+      background: #111;
+      border-radius: 26px 26px 0 0;
+    }
+    .gb-beard {
+      position: absolute;
+      bottom: 4px; left: 50%; transform: translateX(-50%);
+      width: 28px; height: 14px;
+      background: #1a1a1a;
+      border-radius: 0 0 14px 14px;
+      z-index: 0;
+    }
+    .gb-eyes {
+      display: flex; gap: 12px;
+      position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+      z-index: 1;
+    }
+    .gb-eye {
+      width: 5px; height: 5px;
+      background: #222;
+      border-radius: 50%;
+    }
+    .gb-smile {
+      position: absolute;
+      bottom: 12px; left: 50%; transform: translateX(-50%);
+      width: 14px; height: 7px;
+      border-bottom: 2px solid #8a6040;
+      border-radius: 0 0 10px 10px;
+      z-index: 1;
+    }
+    .gb-hair-mali-long {
+      position: absolute;
+      top: -5px; left: -8px; right: -8px; height: 36px;
+      background: #2a1a0a;
+      border-radius: 28px 28px 6px 6px;
+    }
+    .gb-hair-mali-long::after {
+      content: '';
+      position: absolute;
+      top: 26px; left: -2px;
+      width: 16px; height: 34px;
+      background: #2a1a0a;
+      border-radius: 0 0 8px 8px;
+    }
+    .gb-hair-mali-long::before {
+      content: '';
+      position: absolute;
+      top: 26px; right: -2px;
+      width: 16px; height: 34px;
+      background: #2a1a0a;
+      border-radius: 0 0 8px 8px;
+    }
+    .gb-body {
+      width: 44px; height: 58px;
+      background: #222233;
+      border-radius: 12px 12px 6px 6px;
+      margin: 0 auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .mali-head-gb { background: #d4956a; }
+    .mali-body-gb { background: #cc6688; }
+    .gb-legs { display: flex; gap: 6px; justify-content: center; margin-top: 3px; }
+    .gb-leg { width: 14px; height: 42px; background: #1a1a2e; border-radius: 4px; }
+    .gb-arms {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 68px; height: 50px;
+    }
+    .gb-arm-l, .gb-arm-r {
+      position: absolute; top: 10px;
+      width: 10px; height: 36px;
+      background: #222233; border-radius: 5px;
+    }
+    .gb-arm-l { left: -2px; transform: rotate(12deg); }
+    .gb-arm-r { right: -2px; transform: rotate(-12deg); }
+    .mali-arm { background: #cc6688 !important; }
+    .gb-heart-between {
+      font-size: 40px;
+      animation: heartPulseGb 1.2s ease-in-out infinite;
+      align-self: center;
+      margin: 0 8px;
+      filter: drop-shadow(0 0 12px rgba(255,200,0,0.5));
+    }
+    @keyframes heartPulseGb {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+    }
+    .gb-kissing .gb-omer { transform: translateX(22px) rotate(3deg); }
+    .gb-kissing .gb-mali { transform: translateX(-22px) rotate(-3deg); }
+    .gb-kissing .gb-heart-between {
+      animation: kissHeartBurst 0.6s ease-out forwards;
+      font-size: 50px;
+    }
+    @keyframes kissHeartBurst {
+      0% { transform: scale(1); }
+      50% { transform: scale(2.5); filter: drop-shadow(0 0 20px rgba(255,200,0,0.8)); }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+    @keyframes gbFloatHeart {
+      0% { opacity:0; transform: translateY(0) scale(0.5); }
+      30% { opacity:1; transform: translateY(-40px) scale(1); }
+      100% { opacity:0; transform: translateY(-140px) scale(0.6); }
+    }
+    .gb-kiss-emoji {
+      position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+      font-size: 32px; opacity: 0;
+    }
+    .gb-kissing .gb-kiss-emoji {
+      animation: kissEmojiPop 0.5s 0.4s ease-out forwards;
+    }
+    @keyframes kissEmojiPop {
+      0% { opacity:0; transform: translateX(-50%) translateY(0) scale(0); }
+      60% { opacity:1; transform: translateX(-50%) translateY(-30px) scale(1.3); }
+      100% { opacity:1; transform: translateX(-50%) translateY(-20px) scale(1); }
+    }
+    .goodbye-bubbles {
+      margin-bottom: 24px;
+      position: relative; z-index: 2;
+    }
+    .gb-bubble {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 14px 22px;
+      border-radius: 20px;
+      font-size: 16px;
+      margin: 12px auto;
+      max-width: 300px;
+      opacity: 0;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .gb-bubble.left {
+      border-radius: 20px 20px 20px 6px;
+      text-align: left;
+      animation: msgIn 0.6s 0.5s forwards;
+    }
+    .gb-bubble.right {
+      border-radius: 20px 20px 6px 20px;
+      text-align: right;
+      animation: msgIn 0.6s 1.5s forwards;
+    }
+    #gb-continue {
+      opacity: 0;
+      animation: fadeSlideUp 0.6s 2.5s forwards;
+      z-index: 2;
+      position: relative;
+    }
+
+    /* ═══ INTERACTION OVERLAYS ═══ */
+    .interaction-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .interaction-overlay.active { display: flex; }
+    .interaction-progress {
+      width: 220px;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 12px auto 16px;
+    }
+    .interaction-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff9f0a, #ff6b35);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .interaction-tap-btn {
+      padding: 14px 44px;
+      background: linear-gradient(135deg, #ff9f0a, #ff6b35);
+      border: none;
+      border-radius: 25px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .interaction-tap-btn:active { transform: scale(0.92); }
+
+    /* ── Cat Petting Scene ── */
+    .cat-scene {
+      text-align: center;
+      position: relative;
+    }
+    .cat-art {
+      position: relative;
+      width: 200px;
+      height: 180px;
+      margin: 0 auto 10px;
+    }
+    .cat-svg { width: 100%; height: 100%; }
+    .cat-svg.happy { animation: catHappy 0.3s ease; }
+    @keyframes catHappy {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    .pet-hand {
+      position: absolute;
+      top: 15px; right: 10px;
+      font-size: 32px;
+      opacity: 0;
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+    .pet-hand.petting {
+      opacity: 1;
+      animation: petMotion 0.4s ease;
+    }
+    @keyframes petMotion {
+      0% { transform: translateY(-15px) rotate(-20deg); }
+      50% { transform: translateY(5px) rotate(0deg); }
+      100% { transform: translateY(-15px) rotate(-20deg); }
+    }
+    .cat-purr {
+      color: rgba(255,200,100,0.8);
+      font-size: 16px;
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.3s;
+      margin-bottom: 8px;
+    }
+    .cat-purr.show { opacity: 1; }
+    .cat-hearts {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .cat-float-heart {
+      position: absolute;
+      animation: catHeartFloat 1.2s ease-out forwards;
+      opacity: 0;
+      font-size: 20px;
+    }
+    @keyframes catHeartFloat {
+      0% { opacity: 0; transform: translateY(0) scale(0.3); }
+      30% { opacity: 1; transform: translateY(-20px) scale(1); }
+      100% { opacity: 0; transform: translateY(-100px) scale(0.5); }
+    }
+
+    /* ── Makeup Scene ── */
+    .makeup-scene {
+      text-align: center;
+      position: relative;
+    }
+    .makeup-mirror {
+      width: 180px;
+      height: 220px;
+      margin: 0 auto 12px;
+      position: relative;
+    }
+    .makeup-mirror-frame {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      border: 8px solid #D4B896;
+      border-radius: 90px 90px 20px 20px;
+      box-shadow: 0 0 30px rgba(212,184,150,0.3), inset 0 0 20px rgba(255,255,255,0.05);
+    }
+    .makeup-face {
+      position: absolute;
+      top: 20px; left: 20px; right: 20px; bottom: 20px;
+      background: radial-gradient(ellipse, #F5D0B0 0%, #E8B890 100%);
+      border-radius: 80px 80px 16px 16px;
+      overflow: hidden;
+    }
+    .face-base { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+    .face-base.done { background: radial-gradient(ellipse, #FFE0C8 0%, #F0C8A8 100%); }
+    .face-eyes {
+      position: absolute;
+      top: 38%; left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 24px;
+    }
+    .face-eye {
+      width: 16px; height: 20px;
+      background: #3a2a1a;
+      border-radius: 50%;
+      position: relative;
+    }
+    .face-eye::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 4px;
+      width: 5px; height: 5px;
+      background: #fff;
+      border-radius: 50%;
+    }
+    .eyeshadow {
+      position: absolute;
+      width: 28px; height: 10px;
+      border-radius: 50%;
+      background: rgba(180,120,200,0.5);
+      top: 33%;
+      animation: sparkleIn 0.4s ease;
+    }
+    .eyeshadow.left { left: 22%; }
+    .eyeshadow.right { right: 22%; }
+    .face-lips {
+      position: absolute;
+      bottom: 22%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 26px; height: 12px;
+      background: #CC7777;
+      border-radius: 0 0 14px 14px;
+    }
+    .face-lips.done {
+      background: #DD3355;
+      box-shadow: 0 0 8px rgba(221,51,85,0.5);
+    }
+    .blush {
+      position: absolute;
+      width: 22px; height: 16px;
+      border-radius: 50%;
+      background: rgba(255,130,130,0.45);
+      top: 52%;
+      animation: sparkleIn 0.4s ease;
+    }
+    .blush.left { left: 12%; }
+    .blush.right { right: 12%; }
+    @keyframes sparkleIn {
+      from { opacity: 0; transform: scale(0.5); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .makeup-item-label {
+      color: rgba(255,255,255,0.7);
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .makeup-sparkles {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .makeup-sparkle {
+      position: absolute;
+      font-size: 16px;
+      animation: sparkleRise 0.8s ease-out forwards;
+      opacity: 0;
+    }
+    @keyframes sparkleRise {
+      0% { opacity: 0; transform: scale(0.3) translateY(0); }
+      40% { opacity: 1; transform: scale(1) translateY(-15px); }
+      100% { opacity: 0; transform: scale(0.5) translateY(-60px); }
+    }
+    .makeup-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ FADE TRANSITION ═══ -->
+<div id="fade"></div>
+
+<!-- ═══ SCENE 1: INTRO ═══ -->
+<div id="scene-intro" class="scene" style="display:flex; opacity:1;">
+  <div class="sparkle" style="top:20%;left:15%;animation-delay:0s;"></div>
+  <div class="sparkle" style="top:35%;left:75%;animation-delay:0.8s;"></div>
+  <div class="sparkle" style="top:60%;left:25%;animation-delay:1.6s;"></div>
+  <div class="sparkle" style="top:70%;left:80%;animation-delay:2.2s;"></div>
+  <div class="sparkle" style="top:45%;left:50%;animation-delay:0.4s;"></div>
+  <h1>Surprise Date</h1>
+  <p class="subtitle">EIN BESONDERER TAG FÜR DICH</p>
+  <button onclick="Game.switchScene('wakeup')">ÖFFNEN</button>
+</div>
+
+<!-- ═══ SCENE 2: WAKE UP ═══ -->
+<div id="scene-wakeup" class="scene">
+  <div class="wakeup-bed" id="wakeup-bed">
+    <div class="wakeup-pillow"></div>
+    <div class="wakeup-mali">
+      <div class="mali-head">
+        <div class="mali-hair"></div>
+        <div class="mali-eyes">
+          <div class="mali-eye" id="mali-eye-l"></div>
+          <div class="mali-eye" id="mali-eye-r"></div>
+        </div>
+      </div>
+    </div>
+    <div class="wakeup-blanket"></div>
+    <div class="wakeup-zzz" id="zzz-text">zzZ</div>
+    <div class="wakeup-cat" id="wakeup-cat">
+      <div class="cat-body">
+        <div class="cat-head">
+          <div class="cat-ear-l"></div>
+          <div class="cat-ear-r"></div>
+          <div class="cat-eyes">
+            <div class="cat-eye"></div>
+            <div class="cat-eye"></div>
+          </div>
+        </div>
+        <div class="cat-tail"></div>
+      </div>
+    </div>
+  </div>
+  <div class="wakeup-text" id="wakeup-text">Guten Morgen, Mali ☀️</div>
+</div>
+
+<!-- ═══ SCENE 3: PHONE ═══ -->
+<div id="scene-phone" class="scene">
+  <div class="phone-device">
+    <div class="phone-time">08:47</div>
+    <div class="phone-date-text">Heute Morgen</div>
+    <div class="msg-bubble" style="animation-delay:0.3s">
+      <div class="sender">Ömer</div>
+      wake up wake up pookie
+    </div>
+    <div class="msg-bubble" style="animation-delay:0.6s">
+      <div class="sender">Ömer</div>
+      suprise date ?
+    </div>
+    <div class="msg-bubble" style="animation-delay:0.9s">
+      <div class="sender">Ömer</div>
+      bin gleich da !
+    </div>
+    <button class="phone-btn" onclick="Game.closePhone()">Ja natürlich! 💛</button>
+  </div>
+</div>
+
+<!-- ═══ THREE.JS CANVAS ═══ -->
+<canvas id="game-canvas"></canvas>
+<audio id="drive-music-1" loop preload="auto" style="display:none;" volume="0.3">
+  <source src="musik/Song1.mp3" type="audio/mpeg">
+</audio>
+<audio id="drive-music-2" loop preload="auto" style="display:none;" volume="0.3">
+  <source src="musik/Song2.mp3" type="audio/mpeg">
+</audio>
+<audio id="drive-music-3" loop preload="auto" style="display:none;" volume="0.3">
+  <source src="musik/Song3.mp3" type="audio/mpeg">
+</audio>
+
+<!-- ═══ HUD ═══ -->
+<div id="hud">
+  <div id="prompt"></div>
+  <div id="controls-info">Joystick bewegen · Rechts wischen zum Umschauen</div>
+</div>
+
+<!-- ═══ TOUCH CONTROLS ═══ -->
+<div id="joystick-zone">
+  <div id="joystick-base">
+    <div id="joystick-knob"></div>
+  </div>
+</div>
+<div id="look-zone"></div>
+<div id="interact-btn">👁️</div>
+<div id="mission-tracker" style="display:none;position:fixed;top:12px;left:12px;z-index:30;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:12px;padding:10px 14px;pointer-events:none;border:1px solid rgba(255,255,255,0.08);max-width:200px;">
+  <div style="color:#ff9f0a;font-size:11px;font-weight:600;letter-spacing:1.5px;margin-bottom:6px;">MISSIONEN</div>
+  <div id="mission-cat" class="mission-item" style="display:flex;align-items:center;gap:6px;color:#fff;font-size:12px;margin-bottom:4px;opacity:0.9;">
+    <span id="mission-cat-check" style="font-size:14px;">⬜</span> Katze streicheln
+  </div>
+  <div id="mission-makeup" class="mission-item" style="display:flex;align-items:center;gap:6px;color:#fff;font-size:12px;margin-bottom:4px;opacity:0.9;">
+    <span id="mission-makeup-check" style="font-size:14px;">⬜</span> Fertig machen
+  </div>
+  <div id="mission-window" class="mission-item" style="display:flex;align-items:center;gap:6px;color:#fff;font-size:12px;opacity:0.5;">
+    <span id="mission-window-check" style="font-size:14px;">🔒</span> Rausgehen
+  </div>
+</div>
+
+<!-- ═══ WINDOW VIEW BUTTONS ═══ -->
+<div id="window-msg"></div>
+<button id="window-btn" onclick="Game.goToStaircase()">Los geht's! 💛</button>
+
+<!-- ═══ CAT PETTING OVERLAY ═══ -->
+<div class="interaction-overlay" id="overlay-cat">
+  <div class="cat-scene">
+    <div class="cat-art" id="cat-art">
+      <svg viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" class="cat-svg">
+        <!-- Body -->
+        <ellipse cx="100" cy="130" rx="55" ry="30" fill="#8B7355"/>
+        <!-- Stripes -->
+        <ellipse cx="85" cy="125" rx="8" ry="2" fill="#6B5335" transform="rotate(-10 85 125)"/>
+        <ellipse cx="100" cy="122" rx="8" ry="2" fill="#6B5335"/>
+        <ellipse cx="115" cy="125" rx="8" ry="2" fill="#6B5335" transform="rotate(10 115 125)"/>
+        <!-- Head -->
+        <ellipse cx="100" cy="80" rx="32" ry="28" fill="#8B7355"/>
+        <!-- Inner ears -->
+        <polygon points="72,58 65,30 82,50" fill="#8B7355"/>
+        <polygon points="128,58 135,30 118,50" fill="#8B7355"/>
+        <polygon points="74,55 69,36 80,50" fill="#FFBBCC"/>
+        <polygon points="126,55 131,36 120,50" fill="#FFBBCC"/>
+        <!-- Eyes -->
+        <ellipse cx="88" cy="76" rx="7" ry="8" fill="#CCAA00"/>
+        <ellipse cx="112" cy="76" rx="7" ry="8" fill="#CCAA00"/>
+        <ellipse cx="88" cy="76" rx="3" ry="7" fill="#111"/>
+        <ellipse cx="112" cy="76" rx="3" ry="7" fill="#111"/>
+        <circle cx="86" cy="73" r="2" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="110" cy="73" r="2" fill="rgba(255,255,255,0.5)"/>
+        <!-- Nose -->
+        <polygon points="97,88 103,88 100,92" fill="#FFAAAA"/>
+        <!-- Mouth -->
+        <path d="M94 93 Q100 98 106 93" fill="none" stroke="#6B5335" stroke-width="1.5"/>
+        <!-- Whiskers -->
+        <line x1="75" y1="85" x2="50" y2="80" stroke="#DDD" stroke-width="1"/>
+        <line x1="75" y1="88" x2="48" y2="90" stroke="#DDD" stroke-width="1"/>
+        <line x1="75" y1="91" x2="50" y2="100" stroke="#DDD" stroke-width="1"/>
+        <line x1="125" y1="85" x2="150" y2="80" stroke="#DDD" stroke-width="1"/>
+        <line x1="125" y1="88" x2="152" y2="90" stroke="#DDD" stroke-width="1"/>
+        <line x1="125" y1="91" x2="150" y2="100" stroke="#DDD" stroke-width="1"/>
+        <!-- Front paws -->
+        <ellipse cx="75" cy="155" rx="12" ry="8" fill="#8B7355"/>
+        <ellipse cx="125" cy="155" rx="12" ry="8" fill="#8B7355"/>
+        <!-- Tail -->
+        <path d="M155 130 Q175 110 165 85" fill="none" stroke="#6B5335" stroke-width="8" stroke-linecap="round"/>
+      </svg>
+      <!-- Petting hand -->
+      <div class="pet-hand" id="pet-hand">🤚</div>
+    </div>
+    <div class="cat-purr" id="cat-purr">purrr... 💛</div>
+    <div class="interaction-progress"><div class="interaction-progress-bar" id="cat-progress"></div></div>
+    <button class="interaction-tap-btn" id="cat-tap-btn">Streicheln 🐱</button>
+    <div class="cat-hearts" id="cat-hearts-container"></div>
+  </div>
+</div>
+
+<!-- ═══ MAKEUP OVERLAY ═══ -->
+<div class="interaction-overlay" id="overlay-makeup">
+  <div class="makeup-scene">
+    <div class="makeup-mirror">
+      <div class="makeup-mirror-frame"></div>
+      <div class="makeup-face" id="makeup-face">
+        <!-- Face -->
+        <div class="face-base"></div>
+        <div class="face-eyes">
+          <div class="face-eye left"></div>
+          <div class="face-eye right"></div>
+        </div>
+        <div class="face-lips"></div>
+        <!-- Makeup layers (hidden, revealed on tap) -->
+        <div class="makeup-layer" id="mk-foundation" style="display:none;">
+          <div class="face-base done"></div>
+        </div>
+        <div class="makeup-layer" id="mk-eyeshadow" style="display:none;">
+          <div class="eyeshadow left"></div>
+          <div class="eyeshadow right"></div>
+        </div>
+        <div class="makeup-layer" id="mk-lipstick" style="display:none;">
+          <div class="face-lips done"></div>
+        </div>
+        <div class="makeup-layer" id="mk-blush" style="display:none;">
+          <div class="blush left"></div>
+          <div class="blush right"></div>
+        </div>
+      </div>
+    </div>
+    <div class="makeup-item-label" id="makeup-label">Foundation auftragen ✨</div>
+    <div class="interaction-progress"><div class="interaction-progress-bar" id="makeup-progress"></div></div>
+    <button class="interaction-tap-btn" id="makeup-tap-btn">Auftragen 💄</button>
+    <div class="makeup-sparkles" id="makeup-sparkles"></div>
+  </div>
+</div>
+
+<!-- ═══ SCENE 7: MEETING ═══ -->
+<div id="scene-meeting" class="scene" style="background:transparent !important;">
+  <div class="meeting-hearts" id="meeting-hearts"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;padding:30px;background:linear-gradient(transparent, rgba(0,0,0,0.6));text-align:center;">
+    <div class="meeting-text" style="color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.5);">dikka hat der haarausfall</div>
+    <button class="meeting-continue" onclick="Game.switchScene('cardrive')">Weiter</button>
+  </div>
+</div>
+
+<!-- date selection removed - surprise date only -->
+
+<!-- ═══ SCENE 9: CAR DRIVE ═══ -->
+<div id="scene-cardrive" class="scene" style="background:transparent !important;pointer-events:none;">
+  <div class="drive-text" id="drive-text" style="pointer-events:auto;"></div>
+</div>
+
+<!-- ═══ SCENE 10: MINI GAME ═══ -->
+<div id="scene-minigame" class="scene" style="background:transparent !important;">
+  <div id="keramik-overlay" style="position:absolute;bottom:0;left:0;right:0;z-index:20;pointer-events:auto;">
+    <div id="keramik-steps" style="text-align:center;padding:12px;">
+      <!-- Step 1: Choose shape -->
+      <div id="keramik-step1">
+        <div style="color:#fff;font-size:18px;margin-bottom:10px;text-shadow:0 2px 6px rgba(0,0,0,0.6);">Wähle eine Form 🏺</div>
+        <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;">
+          <button class="keramik-shape-btn" onclick="Game.keramikChooseShape('vase')" style="padding:14px 22px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:16px;backdrop-filter:blur(4px);">🏺 Vase</button>
+          <button class="keramik-shape-btn" onclick="Game.keramikChooseShape('bowl')" style="padding:14px 22px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:16px;backdrop-filter:blur(4px);">🥣 Schüssel</button>
+          <button class="keramik-shape-btn" onclick="Game.keramikChooseShape('cup')" style="padding:14px 22px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:16px;backdrop-filter:blur(4px);">☕ Tasse</button>
+          <button class="keramik-shape-btn" onclick="Game.keramikChooseShape('plate')" style="padding:14px 22px;border-radius:12px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:16px;backdrop-filter:blur(4px);">🍽️ Teller</button>
+        </div>
+      </div>
+      <!-- Step 2: Spinning -->
+      <div id="keramik-step2" style="display:none;">
+        <div style="color:#fff;font-size:18px;margin-bottom:8px;text-shadow:0 2px 6px rgba(0,0,0,0.6);">Drehe die Scheibe! 🎡</div>
+        <div style="color:#fff;font-size:13px;opacity:0.7;margin-bottom:10px;">Tippe schnell um zu drehen</div>
+        <div id="keramik-spin-bar" style="width:80%;max-width:300px;height:16px;background:rgba(255,255,255,0.15);border-radius:8px;margin:0 auto;overflow:hidden;">
+          <div id="keramik-spin-fill" style="width:0%;height:100%;background:linear-gradient(90deg,#f0a,#fa0);border-radius:8px;transition:width 0.15s;"></div>
+        </div>
+      </div>
+      <!-- Step 3: Paint -->
+      <div id="keramik-step3" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:50;flex-direction:column;align-items:center;justify-content:center;padding:12px;">
+        <div style="color:#fff;font-size:20px;margin-bottom:10px;text-shadow:0 2px 6px rgba(0,0,0,0.6);">Bemale dein Werk! 🎨</div>
+        <div id="keramik-paint-colors" style="display:flex;justify-content:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;"></div>
+        <canvas id="keramik-paint-canvas" width="600" height="450" style="border-radius:12px;background:#f5e6d3;width:95vw;max-width:600px;height:auto;touch-action:none;cursor:crosshair;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></canvas>
+        <button onclick="Game.keramikDone()" style="margin-top:12px;padding:14px 36px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6b6b,#ffa500);color:#fff;font-size:16px;">Fertig! 🎨</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCENE 11: POST ACTIVITY ═══ -->
+<div id="scene-postactivity" class="scene">
+  <div id="postactivity-content"></div>
+</div>
+
+<!-- ═══ SCENE: 3D CINEMA ═══ -->
+<div id="scene-cinema3d" class="scene" style="background:transparent !important;">
+  <div style="position:absolute;bottom:0;left:0;right:0;padding:24px;background:linear-gradient(transparent,rgba(0,0,0,0.7));text-align:center;z-index:10;">
+    <div style="color:#fff;font-size:18px;margin-bottom:12px;text-shadow:0 2px 8px rgba(0,0,0,0.6);">Ein schöner Film zusammen...</div>
+    <button class="meeting-continue" onclick="Game.cinemaDone()">Weiter</button>
+  </div>
+</div>
+
+<!-- ═══ SCENE: GOODBYE ═══ -->
+<div id="scene-goodbye" class="scene" style="background:linear-gradient(180deg,#0a0a2e 0%,#1a1a3e 40%,#2a2040 100%);">
+  <div class="goodbye-bg-stars" id="gb-stars"></div>
+  <div class="goodbye-scene">
+    <div class="goodbye-figures" id="gb-figures">
+      <div class="gb-omer" id="gb-omer-fig">
+        <div class="gb-head">
+          <div class="gb-hair"></div>
+          <div class="gb-beard"></div>
+          <div class="gb-eyes"><div class="gb-eye"></div><div class="gb-eye"></div></div>
+          <div class="gb-smile"></div>
+        </div>
+        <div style="position:relative;">
+          <div class="gb-body"></div>
+          <div class="gb-arms"><div class="gb-arm-l"></div><div class="gb-arm-r"></div></div>
+        </div>
+        <div class="gb-legs"><div class="gb-leg"></div><div class="gb-leg"></div></div>
+      </div>
+      <div class="gb-heart-between" id="gb-heart">💛</div>
+      <div class="gb-mali" id="gb-mali-fig">
+        <div class="gb-kiss-emoji" id="gb-kiss-emoji">💋</div>
+        <div class="gb-head mali-head-gb">
+          <div class="gb-hair-mali-long"></div>
+          <div class="gb-eyes"><div class="gb-eye"></div><div class="gb-eye"></div></div>
+          <div class="gb-smile"></div>
+        </div>
+        <div style="position:relative;">
+          <div class="gb-body mali-body-gb"></div>
+          <div class="gb-arms"><div class="gb-arm-l mali-arm"></div><div class="gb-arm-r mali-arm"></div></div>
+        </div>
+        <div class="gb-legs"><div class="gb-leg"></div><div class="gb-leg"></div></div>
+      </div>
+    </div>
+    <div class="goodbye-bubbles">
+      <div class="gb-bubble left" id="gb-bubble-1">Ich liebe dich 💛</div>
+      <div class="gb-bubble right" id="gb-bubble-2">🖕 Sag mir wenn du zuhause bist!</div>
+    </div>
+    <button class="meeting-continue" id="gb-continue" onclick="Game.goodbyeKiss()">Weiter 💛</button>
+  </div>
+</div>
+
+<!-- ═══ SCENE 13: FINALE ═══ -->
+<div id="scene-finale" class="scene" style="display:flex;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="text-align:center;z-index:10;">
+    <div style="font-size:48px;margin-bottom:20px;">💛</div>
+    <div style="color:#ff9f0a;font-size:32px;font-weight:600;margin-bottom:12px;text-shadow:0 0 30px rgba(255,159,10,0.4);">I love you pookie</div>
+    <div style="color:rgba(255,255,255,0.4);font-size:14px;letter-spacing:2px;">SURPRISE DATE 💛</div>
+  </div>
+  <div class="finale-hearts" id="finale-hearts"></div>
+</div>
+
+<!-- ═══ SCRIPTS ═══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  /* ═══════════════════════════════════════════
+     GAME STATE
+     ═══════════════════════════════════════════ */
+  const state = {
+    currentScene: 'intro',
+    chosenDate: null,
+    finalChoice: null,
+    dateText: '',
+    catPetted: false,
+    makeupDone: false,
+    catProgress: 0,
+    makeupProgress: 0,
+    windowViewing: false,
+    starsPlaced: 0,
+  };
+
+  /* ═══════════════════════════════════════════
+     THREE.JS ENGINE
+     ═══════════════════════════════════════════ */
+  let scene3d, camera, renderer;
+  let yaw = 0, pitch = 0;
+  let prevTime = performance.now();
+  let roomMode = 'room'; // 'room' or 'staircase'
+  let interactionZones = [];
+  let nearZone = null;
+  let cameraAnimating = false;
+  let cameraTarget = null;
+  let cameraLookTarget = null;
+  let outsideGroup = null;
+
+  const canvas = document.getElementById('game-canvas');
+
+  function initEngine() {
+    scene3d = new THREE.Scene();
+    scene3d.background = new THREE.Color(0x1a1008);
+    scene3d.fog = new THREE.Fog(0x1a1008, 10, 25);
+
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.7, 3);
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.physicallyCorrectLights = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+  }
+
+  function clearScene() {
+    while (scene3d.children.length > 0) {
+      const obj = scene3d.children[0];
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
+      }
+      scene3d.remove(obj);
+    }
+    interactionZones = [];
+    nearZone = null;
+    outsideGroup = null;
+    carRig = null;
+  }
+
+  function addBox(x, y, z, w, h, d, color, opts = {}) {
+    const { parent: parentObj, castShadow: cs, receiveShadow: rs, ...matOpts } = opts;
+    const mat = new THREE.MeshLambertMaterial({ color, ...matOpts });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    mesh.position.set(x, y, z);
+    if (cs !== false) mesh.castShadow = true;
+    if (rs !== false) mesh.receiveShadow = true;
+    (parentObj || scene3d).add(mesh);
+    return mesh;
+  }
+
+  /* ═══════════════════════════════════════════
+     BUILD ROOM
+     ═══════════════════════════════════════════ */
+  function buildRoom() {
+    clearScene();
+    scene3d.background = new THREE.Color(0x2a1f14);
+    scene3d.fog = new THREE.Fog(0x2a1f14, 12, 30);
+    roomMode = 'room';
+
+    const wallColor = 0xF5E6D3;
+    const wallColor2 = 0xEDD5C0;
+    const woodDark = 0x5C3A1E;
+    const woodMed = 0x8B5E3C;
+    const woodLight = 0xC8A06E;
+
+    // ── Floor (wooden planks look) ──
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(8, 10),
+      new THREE.MeshLambertMaterial({ color: 0xB8860B })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene3d.add(floor);
+
+    // ── Ceiling ──
+    const ceil = new THREE.Mesh(
+      new THREE.PlaneGeometry(8, 10),
+      new THREE.MeshLambertMaterial({ color: 0xFFF8F0 })
+    );
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.y = 3;
+    scene3d.add(ceil);
+
+    // ── Walls (no full north wall - window sections form it) ──
+    addBox(0, 1.5, 5, 8, 3, 0.1, wallColor);     // South (behind player)
+    addBox(-4, 1.5, 0, 0.1, 3, 10, wallColor2);  // West (left)
+    addBox(4, 1.5, 0, 0.1, 3, 10, wallColor2);   // East (right)
+
+    // ── Baseboard trim ──
+    addBox(0, 0.06, -4.95, 8, 0.12, 0.05, 0xD4B896);
+    addBox(0, 0.06, 4.95, 8, 0.12, 0.05, 0xD4B896);
+    addBox(-3.95, 0.06, 0, 0.05, 0.12, 10, 0xD4B896);
+    addBox(3.95, 0.06, 0, 0.05, 0.12, 10, 0xD4B896);
+
+    // ── Window (north wall, z=-5) ──
+    addBox(-2.5, 1.5, -4.98, 3, 3, 0.12, wallColor);
+    addBox(2.5, 1.5, -4.98, 3, 3, 0.12, wallColor);
+    addBox(0, 2.7, -4.98, 2, 0.6, 0.12, wallColor);
+    addBox(0, 0.5, -4.98, 2, 1, 0.12, wallColor);
+    // Frame
+    addBox(-1.05, 1.7, -4.9, 0.08, 1.8, 0.1, 0xD4B896);
+    addBox(1.05, 1.7, -4.9, 0.08, 1.8, 0.1, 0xD4B896);
+    addBox(0, 2.6, -4.9, 2.18, 0.08, 0.1, 0xD4B896);
+    addBox(0, 0.95, -4.9, 2.18, 0.08, 0.1, 0xD4B896);
+    addBox(0, 1.7, -4.9, 0.06, 1.65, 0.06, 0xD4B896);
+    // Glass
+    addBox(0, 1.7, -4.88, 2, 1.6, 0.02, 0x87CEEB, { transparent: true, opacity: 0.25 });
+    // Window sill
+    addBox(0, 0.95, -4.8, 2.3, 0.06, 0.2, 0xD4B896);
+
+    // ── BED (against left wall, west) ──
+    // Headboard against wall
+    addBox(-3.7, 0.9, 1, 0.15, 1.4, 2, woodDark);
+    // Bed frame
+    addBox(-2.8, 0.2, 1, 1.9, 0.35, 2.2, woodDark);
+    // Mattress
+    addBox(-2.8, 0.5, 1, 1.75, 0.22, 2.1, 0xFFF5EE);
+    // Pillow
+    addBox(-3.2, 0.68, 1, 0.5, 0.12, 0.7, 0xFFE4E1);
+    // Blanket
+    addBox(-2.5, 0.63, 1, 1.2, 0.1, 1.8, 0xE8A0A0);
+    // Footboard
+    addBox(-1.85, 0.5, 1, 0.1, 0.65, 2, woodDark);
+
+    // ── CAT on bed (detailed) ──
+    const catColor = 0x8B7355;
+    const catDark = 0x6B5335;
+    const catMat = new THREE.MeshLambertMaterial({ color: catColor });
+    const catDarkMat = new THREE.MeshLambertMaterial({ color: catDark });
+    // Body (elongated oval, lying down)
+    const catBody = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), catMat);
+    catBody.position.set(-2.8, 0.76, 1.6);
+    catBody.scale.set(0.9, 0.55, 1.5);
+    scene3d.add(catBody);
+    // Head (slightly larger, cat-shaped)
+    const catHead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), catMat);
+    catHead.position.set(-2.8, 0.88, 1.25);
+    catHead.scale.set(1.1, 0.9, 1);
+    scene3d.add(catHead);
+    // Snout
+    const snout = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshLambertMaterial({ color: 0xA08060 }));
+    snout.position.set(-2.8, 0.84, 1.14);
+    snout.scale.set(1, 0.7, 1);
+    scene3d.add(snout);
+    // Nose (tiny pink)
+    const nose = new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 6), new THREE.MeshLambertMaterial({ color: 0xFFAAAA }));
+    nose.position.set(-2.8, 0.86, 1.12);
+    scene3d.add(nose);
+    // Eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xCCAA00 });
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 6), eyeMat);
+    eyeL.position.set(-2.85, 0.91, 1.15);
+    scene3d.add(eyeL);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 6), eyeMat);
+    eyeR.position.set(-2.75, 0.91, 1.15);
+    scene3d.add(eyeR);
+    // Pupils
+    const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+    const pupilL = new THREE.Mesh(new THREE.SphereGeometry(0.01, 4, 4), pupilMat);
+    pupilL.position.set(-2.85, 0.91, 1.13);
+    scene3d.add(pupilL);
+    const pupilR = new THREE.Mesh(new THREE.SphereGeometry(0.01, 4, 4), pupilMat);
+    pupilR.position.set(-2.75, 0.91, 1.13);
+    scene3d.add(pupilR);
+    // Ears (pointy triangles)
+    const earGeo = new THREE.ConeGeometry(0.04, 0.1, 4);
+    const earL = new THREE.Mesh(earGeo, catMat);
+    earL.position.set(-2.88, 1.0, 1.22);
+    earL.rotation.z = 0.15;
+    scene3d.add(earL);
+    const earR = new THREE.Mesh(earGeo, catMat);
+    earR.position.set(-2.72, 1.0, 1.22);
+    earR.rotation.z = -0.15;
+    scene3d.add(earR);
+    // Inner ears (pink)
+    const innerEarGeo = new THREE.ConeGeometry(0.02, 0.06, 4);
+    const innerEarMat = new THREE.MeshLambertMaterial({ color: 0xFFBBCC });
+    const innerEarL = new THREE.Mesh(innerEarGeo, innerEarMat);
+    innerEarL.position.set(-2.88, 0.99, 1.21);
+    innerEarL.rotation.z = 0.15;
+    scene3d.add(innerEarL);
+    const innerEarR = new THREE.Mesh(innerEarGeo, innerEarMat);
+    innerEarR.position.set(-2.72, 0.99, 1.21);
+    innerEarR.rotation.z = -0.15;
+    scene3d.add(innerEarR);
+    // Front paws
+    const pawGeo = new THREE.SphereGeometry(0.04, 6, 6);
+    const pawL = new THREE.Mesh(pawGeo, catMat);
+    pawL.position.set(-2.88, 0.7, 1.3);
+    pawL.scale.set(0.8, 0.5, 1.2);
+    scene3d.add(pawL);
+    const pawR = new THREE.Mesh(pawGeo, catMat);
+    pawR.position.set(-2.72, 0.7, 1.3);
+    pawR.scale.set(0.8, 0.5, 1.2);
+    scene3d.add(pawR);
+    // Tail (single curved tube)
+    const tailCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-2.8, 0.72, 1.9),
+      new THREE.Vector3(-2.75, 0.78, 2.05),
+      new THREE.Vector3(-2.68, 0.88, 2.15),
+      new THREE.Vector3(-2.62, 1.0, 2.18),
+    ]);
+    const tailGeo = new THREE.TubeGeometry(tailCurve, 12, 0.022, 6, false);
+    const tailMesh = new THREE.Mesh(tailGeo, catDarkMat);
+    scene3d.add(tailMesh);
+    // Stripe markings on body
+    const stripeMat = new THREE.MeshLambertMaterial({ color: catDark });
+    for (let i = 0; i < 3; i++) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.01, 0.04), stripeMat);
+      stripe.position.set(-2.8, 0.82, 1.45 + i * 0.15);
+      scene3d.add(stripe);
+    }
+    // Whiskers (thin white lines)
+    const whiskerMat = new THREE.MeshBasicMaterial({ color: 0xDDDDDD });
+    [[-1, -0.3], [-1, 0.1], [-1, 0.5], [1, -0.3], [1, 0.1], [1, 0.5]].forEach(([side, yOff]) => {
+      const whisker = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, 0.12, 3), whiskerMat);
+      whisker.position.set(-2.8 + side * 0.08, 0.85 + yOff * 0.03, 1.12);
+      whisker.rotation.z = side * 0.3 + yOff * 0.2;
+      whisker.rotation.y = side * 0.4;
+      scene3d.add(whisker);
+    });
+
+    // ── NIGHTSTAND (next to bed) ──
+    addBox(-1.5, 0.3, -0.2, 0.5, 0.6, 0.45, woodMed);
+    // Lamp on nightstand
+    addBox(-1.5, 0.7, -0.2, 0.12, 0.2, 0.12, 0xCCCCCC);
+    const lampShade = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.14, 0.2, 8),
+      new THREE.MeshLambertMaterial({ color: 0xFFE4B5 })
+    );
+    lampShade.position.set(-1.5, 0.9, -0.2);
+    scene3d.add(lampShade);
+
+    // ── VANITY TABLE (against right wall, east, flush) ──
+    // Table top
+    addBox(3.55, 0.78, -2.5, 0.8, 0.06, 1.2, woodLight);
+    // Legs
+    for (const [dx, dz] of [[-0.35, -0.55], [0.35, -0.55], [-0.35, 0.55], [0.35, 0.55]]) {
+      addBox(3.55 + dx, 0.39, -2.5 + dz, 0.05, 0.76, 0.05, woodMed);
+    }
+    // Mirror on wall
+    addBox(3.92, 1.5, -2.5, 0.04, 0.9, 0.7, 0xBBDDEE, { transparent: true, opacity: 0.5 });
+    addBox(3.92, 1.5, -2.5, 0.03, 1.0, 0.8, 0xD4B896);
+    // Makeup items
+    const lipstick = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.02, 0.02, 0.1, 6),
+      new THREE.MeshLambertMaterial({ color: 0xCC3366 })
+    );
+    lipstick.position.set(3.4, 0.86, -2.6);
+    scene3d.add(lipstick);
+    const perfume = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.03, 0.12, 6),
+      new THREE.MeshLambertMaterial({ color: 0xE8B0D4 })
+    );
+    perfume.position.set(3.6, 0.87, -2.3);
+    scene3d.add(perfume);
+    // Small stool
+    addBox(3.2, 0.2, -2.5, 0.4, 0.4, 0.4, woodLight);
+
+    // ── WARDROBE (against south wall, behind player) ──
+    addBox(2.8, 1.1, 4.7, 1.6, 2.2, 0.55, woodMed);
+    // Wardrobe doors line
+    addBox(2.8, 1.1, 4.42, 0.04, 1.8, 0.02, 0x7A5C3C);
+    // Handles
+    const handleGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.12, 6);
+    const handleMat = new THREE.MeshLambertMaterial({ color: 0xD4AA70 });
+    const h1 = new THREE.Mesh(handleGeo, handleMat);
+    h1.position.set(2.65, 1.1, 4.4);
+    h1.rotation.z = Math.PI / 2;
+    scene3d.add(h1);
+    const h2 = new THREE.Mesh(handleGeo, handleMat);
+    h2.position.set(2.95, 1.1, 4.4);
+    h2.rotation.z = Math.PI / 2;
+    scene3d.add(h2);
+
+    // ── RUG (center of room) ──
+    const rug = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.8, 2),
+      new THREE.MeshLambertMaterial({ color: 0xC97B5D })
+    );
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.set(0, 0.01, 0);
+    scene3d.add(rug);
+    // Rug border
+    const rugBorder = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.2, 2.4),
+      new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+    );
+    rugBorder.rotation.x = -Math.PI / 2;
+    rugBorder.position.set(0, 0.005, 0);
+    scene3d.add(rugBorder);
+
+    // ── PHOTO FRAMES (load from images/ folder) ──
+    const texLoader = new THREE.TextureLoader();
+    const frameMat = new THREE.MeshLambertMaterial({ color: 0x5C3A1E });
+    const defaultColors = [0xF4A460, 0x87CEEB, 0xDDA0DD, 0x98FB98, 0xFFB6C1];
+    const picPositions = [
+      { x: -3.92, y: 1.8, z: -1.5, rx: 0, ry: Math.PI / 2, fw: 0.7, fh: 0.5, file: 'images/bild1.jpg' },
+      { x: -3.92, y: 1.8, z: 3.0, rx: 0, ry: Math.PI / 2, fw: 0.55, fh: 0.4, file: 'images/bild2.jpg' },
+      { x: 0, y: 1.9, z: 4.92, rx: 0, ry: 0, fw: 0.7, fh: 0.5, file: 'images/bild3.jpg' },
+      { x: 3.92, y: 2.2, z: -0.5, rx: 0, ry: -Math.PI / 2, fw: 0.6, fh: 0.4, file: 'images/bild4.jpeg' },
+      { x: 3.92, y: 1.5, z: 2.5, rx: 0, ry: -Math.PI / 2, fw: 0.55, fh: 0.4, file: 'images/bild5.jpg' },
+    ];
+    picPositions.forEach((p, i) => {
+      // Frame
+      const frameGeo = new THREE.BoxGeometry(p.fw + 0.1, p.fh + 0.1, 0.04);
+      const frame = new THREE.Mesh(frameGeo, frameMat);
+      frame.position.set(p.x, p.y, p.z);
+      frame.rotation.y = p.ry;
+      scene3d.add(frame);
+      // Photo canvas
+      const canvasGeo = new THREE.PlaneGeometry(p.fw, p.fh);
+      const fallbackMat = new THREE.MeshLambertMaterial({ color: defaultColors[i] });
+      const photoMesh = new THREE.Mesh(canvasGeo, fallbackMat);
+      photoMesh.position.set(p.x, p.y, p.z);
+      photoMesh.rotation.y = p.ry;
+      photoMesh.translateZ(0.025);
+      scene3d.add(photoMesh);
+      texLoader.load(p.file, (tex) => {
+        photoMesh.material = new THREE.MeshBasicMaterial({ map: tex });
+      }, undefined, () => {});
+    });
+
+    // ── FLOWERS (vase on window sill) ──
+    const vase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.08, 0.2, 8),
+      new THREE.MeshLambertMaterial({ color: 0xE8D4B8 })
+    );
+    vase.position.set(0.5, 1.08, -4.75);
+    scene3d.add(vase);
+    // Flowers (colored spheres)
+    const flowerColors = [0xFF69B4, 0xFF6347, 0xFFD700];
+    flowerColors.forEach((c, i) => {
+      const flower = new THREE.Mesh(
+        new THREE.SphereGeometry(0.05, 6, 6),
+        new THREE.MeshLambertMaterial({ color: c })
+      );
+      flower.position.set(0.5 + (i - 1) * 0.06, 1.25 + i * 0.02, -4.75);
+      scene3d.add(flower);
+      // Stem
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.008, 0.008, 0.15, 4),
+        new THREE.MeshLambertMaterial({ color: 0x228B22 })
+      );
+      stem.position.set(0.5 + (i - 1) * 0.06, 1.17, -4.75);
+      scene3d.add(stem);
+    });
+
+    // ── SECOND PLANT (corner, floor) ──
+    const pot2 = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.09, 0.25, 8),
+      new THREE.MeshLambertMaterial({ color: 0xD2691E })
+    );
+    pot2.position.set(-3.5, 0.125, -4);
+    scene3d.add(pot2);
+    const plant2 = new THREE.Mesh(
+      new THREE.SphereGeometry(0.25, 8, 8),
+      new THREE.MeshLambertMaterial({ color: 0x2E8B57 })
+    );
+    plant2.position.set(-3.5, 0.45, -4);
+    scene3d.add(plant2);
+
+    // ── SMALL BOOKSHELF (right wall, near wardrobe) ──
+    addBox(3.7, 0.5, 2.5, 0.5, 1.0, 0.8, woodMed);
+    // Books (colored spines)
+    const bookColors = [0xCC3333, 0x3366CC, 0x33AA33, 0xCC9933, 0x9933CC];
+    bookColors.forEach((c, i) => {
+      addBox(3.7, 0.85, 2.2 + i * 0.15, 0.35, 0.25, 0.08, c);
+    });
+
+    // ── FAIRY LIGHTS along ceiling edge (warm glow points) ──
+    for (let i = 0; i < 8; i++) {
+      const light = new THREE.Mesh(
+        new THREE.SphereGeometry(0.025, 4, 4),
+        new THREE.MeshBasicMaterial({ color: 0xFFD700 })
+      );
+      light.position.set(-3.8, 2.85, -4 + i * 1.1);
+      scene3d.add(light);
+    }
+
+    // ── Outside world (visible through window) ──
+    buildOutside();
+
+    // ── LIGHTS ──
+    scene3d.add(new THREE.AmbientLight(0xFFF0E0, 0.6));
+
+    const sunLight = new THREE.DirectionalLight(0xFFF8E8, 1.8);
+    sunLight.position.set(2, 6, -10);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(1024, 1024);
+    scene3d.add(sunLight);
+
+    const roomLight = new THREE.PointLight(0xFFD097, 1.5, 12);
+    roomLight.position.set(0, 2.8, 0);
+    roomLight.castShadow = true;
+    scene3d.add(roomLight);
+
+    const deskLight = new THREE.PointLight(0xFFE8D0, 0.8, 4);
+    deskLight.position.set(3.5, 1.4, -2.5);
+    scene3d.add(deskLight);
+
+    const bedLight = new THREE.PointLight(0xFFE4B5, 0.5, 3);
+    bedLight.position.set(-1.5, 1.0, -0.2);
+    scene3d.add(bedLight);
+
+    // ── Interaction zones ──
+    interactionZones = [];
+    if (!state.catPetted) {
+      interactionZones.push({ name: 'cat', x: -2.8, z: 1.6, radius: 1.8, label: 'Katze streicheln 🐱' });
+    }
+    if (!state.makeupDone) {
+      interactionZones.push({ name: 'makeup', x: 3.5, z: -2.5, radius: 1.8, label: 'Fertig machen 💄' });
+    }
+    if (state.catPetted && state.makeupDone) {
+      interactionZones.push({ name: 'window', x: 0, z: -4.5, radius: 2, label: 'Aus dem Fenster schauen 🪟' });
+    }
+
+    camera.position.set(0, 1.7, 3);
+    yaw = 0;
+    pitch = 0;
+  }
+
+  /* ═══════════════════════════════════════════
+     BUILD OUTSIDE (visible through window)
+     ═══════════════════════════════════════════ */
+  function buildOutside() {
+    outsideGroup = new THREE.Group();
+    outsideGroup.position.set(0, 0, -8);
+
+    // Sky
+    const sky = new THREE.Mesh(
+      new THREE.PlaneGeometry(50, 25),
+      new THREE.MeshBasicMaterial({ color: 0x87CEEB })
+    );
+    sky.position.set(0, 8, -12);
+    outsideGroup.add(sky);
+
+    // Sun
+    const sun = new THREE.Mesh(
+      new THREE.SphereGeometry(1.5, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xFFF8DC })
+    );
+    sun.position.set(6, 12, -15);
+    outsideGroup.add(sun);
+
+    // Ground
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(40, 15),
+      new THREE.MeshLambertMaterial({ color: 0x4a7a3a })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(0, -1.8, 0);
+    outsideGroup.add(ground);
+
+    // Street
+    const street = new THREE.Mesh(
+      new THREE.PlaneGeometry(30, 5),
+      new THREE.MeshLambertMaterial({ color: 0x444444 })
+    );
+    street.rotation.x = -Math.PI / 2;
+    street.position.set(0, -1.75, -2);
+    outsideGroup.add(street);
+
+    // Sidewalk
+    addBox(0, -1.65, 1.5, 30, 0.12, 2, 0xBBBBBB, { parent: outsideGroup });
+
+    // Buildings across the street
+    const buildingColors = [0x8a7f72, 0x9a8f82, 0x7d7268, 0x9e9385, 0x887766];
+    for (let i = -3; i <= 3; i++) {
+      if (Math.abs(i) < 1) continue;
+      const h = 5 + Math.random() * 5;
+      const w = 2.5 + Math.random() * 1.5;
+      const bld = addBox(i * 4, h / 2 - 1.7, -6, w, h, 2, buildingColors[Math.abs(i) % 5], { parent: outsideGroup });
+      // Windows on buildings
+      for (let wy = 0; wy < 3; wy++) {
+        for (let wx = 0; wx < 2; wx++) {
+          addBox(
+            i * 4 - 0.4 + wx * 0.8,
+            wy * 1.2 + 0.5,
+            -4.95,
+            0.4, 0.5, 0.05,
+            0xFFF8DC, { parent: outsideGroup }
+          );
+        }
+      }
+    }
+
+    // ── BLACK CAR (parked in front of house) ──
+    const carGroup = new THREE.Group();
+    carGroup.position.set(0.5, -1.2, 0);
+    // Body
+    addBox(0, 0.35, 0, 2.4, 0.55, 1.1, 0x1a1a1a, { parent: carGroup });
+    // Roof
+    addBox(0, 0.72, 0.05, 1.4, 0.42, 1.0, 0x111111, { parent: carGroup });
+    // Windshield
+    addBox(0.55, 0.65, 0.05, 0.3, 0.3, 0.85, 0x556688, { parent: carGroup, transparent: true, opacity: 0.6 });
+    // Rear window
+    addBox(-0.55, 0.65, 0.05, 0.3, 0.3, 0.85, 0x556688, { parent: carGroup, transparent: true, opacity: 0.6 });
+    // Wheels
+    const wheelGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.12, 10);
+    const wheelMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+    [[-0.8, 0.55], [0.8, 0.55], [-0.8, -0.55], [0.8, -0.55]].forEach(([x, z]) => {
+      const w = new THREE.Mesh(wheelGeo, wheelMat);
+      w.position.set(x, 0.0, z);
+      w.rotation.x = Math.PI / 2;
+      carGroup.add(w);
+    });
+    // Headlights
+    addBox(1.22, 0.35, 0.3, 0.05, 0.1, 0.15, 0xFFFFCC, { parent: carGroup });
+    addBox(1.22, 0.35, -0.3, 0.05, 0.1, 0.15, 0xFFFFCC, { parent: carGroup });
+    // Taillights
+    addBox(-1.22, 0.35, 0.3, 0.05, 0.1, 0.15, 0xFF3333, { parent: carGroup });
+    addBox(-1.22, 0.35, -0.3, 0.05, 0.1, 0.15, 0xFF3333, { parent: carGroup });
+    outsideGroup.add(carGroup);
+
+    // ── ÖMER (standing next to car, leaning, looking up) ──
+    const omerGroup = new THREE.Group();
+    omerGroup.position.set(2.2, -1.2, 0.5);
+    // Legs
+    addBox(-0.08, 0.3, 0, 0.14, 0.6, 0.14, 0x1a1a2e, { parent: omerGroup });
+    addBox(0.08, 0.3, 0, 0.14, 0.6, 0.14, 0x1a1a2e, { parent: omerGroup });
+    // Body (dark jacket)
+    addBox(0, 0.85, 0, 0.4, 0.65, 0.25, 0x222233, { parent: omerGroup });
+    // Head
+    const omerHead = new THREE.Mesh(
+      new THREE.SphereGeometry(0.17, 10, 10),
+      new THREE.MeshLambertMaterial({ color: 0xd4956a })
+    );
+    omerHead.position.set(0, 1.35, 0);
+    omerGroup.add(omerHead);
+    // Hair
+    const omerHair = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 10, 5, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshLambertMaterial({ color: 0x111111 })
+    );
+    omerHair.position.set(0, 1.38, 0);
+    omerGroup.add(omerHair);
+    // Arm (waving up)
+    addBox(0.28, 1.2, 0, 0.1, 0.5, 0.1, 0x222233, { parent: omerGroup });
+    const omerHand = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 6, 6),
+      new THREE.MeshLambertMaterial({ color: 0xd4956a })
+    );
+    omerHand.position.set(0.28, 1.5, 0);
+    omerGroup.add(omerHand);
+    outsideGroup.add(omerGroup);
+
+    // Outside light
+    const outsideLight = new THREE.DirectionalLight(0xFFF8DC, 1.0);
+    outsideLight.position.set(5, 10, -10);
+    outsideGroup.add(outsideLight);
+
+    scene3d.add(outsideGroup);
+  }
+
+  /* ═══════════════════════════════════════════
+     BUILD STAIRCASE
+     ═══════════════════════════════════════════ */
+  function buildStaircase() {
+    clearScene();
+    scene3d.background = new THREE.Color(0x18140e);
+    scene3d.fog = new THREE.Fog(0x18140e, 8, 18);
+    roomMode = 'staircase';
+
+    // Simple flat hallway (no stairs = no falling through)
+    // Floor
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(3, 16),
+      new THREE.MeshLambertMaterial({ color: 0x9B7924 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, 0, -2);
+    floor.receiveShadow = true;
+    scene3d.add(floor);
+
+    // Ceiling
+    const ceil = new THREE.Mesh(
+      new THREE.PlaneGeometry(3, 16),
+      new THREE.MeshLambertMaterial({ color: 0xFAF0E6 })
+    );
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.set(0, 3, -2);
+    scene3d.add(ceil);
+
+    // Walls
+    addBox(-1.5, 1.5, -2, 0.15, 3, 16, 0xEDD5C0);
+    addBox(1.5, 1.5, -2, 0.15, 3, 16, 0xEDD5C0);
+    addBox(0, 1.5, 6, 3, 3, 0.15, 0xF5E6D3); // back wall
+
+    // Pictures on walls
+    addBox(-1.42, 1.8, 2, 0.04, 0.5, 0.65, 0x5C3A1E);
+    addBox(-1.4, 1.8, 2, 0.02, 0.4, 0.55, 0xDDA0DD);
+    addBox(-1.42, 1.8, -2, 0.04, 0.5, 0.65, 0x5C3A1E);
+    addBox(-1.4, 1.8, -2, 0.02, 0.4, 0.55, 0x87CEEB);
+    addBox(1.42, 1.8, 0, 0.04, 0.5, 0.65, 0x5C3A1E);
+    addBox(1.4, 1.8, 0, 0.02, 0.4, 0.55, 0xF4A460);
+
+    // End wall with door
+    addBox(-0.9, 1.5, -10, 1.2, 3, 0.15, 0xF5E6D3);
+    addBox(0.9, 1.5, -10, 1.2, 3, 0.15, 0xF5E6D3);
+    addBox(0, 2.7, -10, 0.6, 0.6, 0.15, 0xF5E6D3);
+
+    // Door opening (glow showing outside light)
+    addBox(0, 1.0, -9.95, 1.0, 2.0, 0.05, 0xFFEECC, { transparent: true, opacity: 0.3 });
+
+    // Door frame
+    addBox(-0.55, 1.0, -9.9, 0.1, 2.2, 0.12, 0xD4B896);
+    addBox(0.55, 1.0, -9.9, 0.1, 2.2, 0.12, 0xD4B896);
+    addBox(0, 2.15, -9.9, 1.2, 0.1, 0.12, 0xD4B896);
+
+    // Hallway lights
+    scene3d.add(new THREE.AmbientLight(0xFFE4C4, 0.4));
+    const l1 = new THREE.PointLight(0xFFD097, 1.0, 6);
+    l1.position.set(0, 2.8, 4);
+    scene3d.add(l1);
+    const l2 = new THREE.PointLight(0xFFD097, 1.0, 6);
+    l2.position.set(0, 2.8, 0);
+    scene3d.add(l2);
+    const l3 = new THREE.PointLight(0xFFD097, 1.0, 6);
+    l3.position.set(0, 2.8, -5);
+    scene3d.add(l3);
+    // Door glow
+    const doorGlow = new THREE.PointLight(0xFFEEAA, 1.0, 5);
+    doorGlow.position.set(0, 1.5, -9);
+    scene3d.add(doorGlow);
+
+    interactionZones = [
+      { name: 'door', x: 0, z: -9, radius: 2, label: 'Rausgehen 🚪' }
+    ];
+
+    camera.position.set(0, 1.7, 5);
+    yaw = 0;
+    pitch = 0;
+  }
+
+  /* ═══════════════════════════════════════════
+     BUILD MEETING SCENE (3D outdoor)
+     ═══════════════════════════════════════════ */
+  function buildMeetingScene() {
+    clearScene();
+    scene3d.background = new THREE.Color(0x87CEEB);
+    scene3d.fog = new THREE.Fog(0x87CEEB, 15, 40);
+    roomMode = 'meeting3d';
+
+    // Ground
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(40, 40),
+      new THREE.MeshLambertMaterial({ color: 0x4a7a3a })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene3d.add(ground);
+
+    // Sidewalk
+    addBox(0, 0.05, 0, 20, 0.1, 3, 0xBBBBBB);
+
+    // Street
+    const street = new THREE.Mesh(
+      new THREE.PlaneGeometry(20, 6),
+      new THREE.MeshLambertMaterial({ color: 0x444444 })
+    );
+    street.rotation.x = -Math.PI / 2;
+    street.position.set(0, 0.01, -4);
+    scene3d.add(street);
+
+    // Buildings across street
+    const bColors = [0x8a7f72, 0x9a8f82, 0x7d7268];
+    for (let i = -2; i <= 2; i++) {
+      const h = 5 + Math.random() * 4;
+      addBox(i * 4, h / 2, -9, 3, h, 2, bColors[Math.abs(i) % 3]);
+    }
+
+    // Black car parked
+    const carG = new THREE.Group();
+    carG.position.set(-3, 0, -1.5);
+    addBox(0, 0.4, 0, 2.4, 0.55, 1.1, 0x1a1a1a, { parent: carG });
+    addBox(0, 0.75, 0, 1.4, 0.42, 1.0, 0x111111, { parent: carG });
+    scene3d.add(carG);
+
+    // Ömer figure (with beard, flowers in outstretched hand, RedBull)
+    const omer = new THREE.Group();
+    omer.position.set(0, 0, 0.5);
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xd4956a });
+    const clothMat = new THREE.MeshLambertMaterial({ color: 0x222233 });
+    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x1a1a2e });
+    const shoeMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+    // Shoes
+    addBox(-0.1, 0.06, 0.05, 0.14, 0.1, 0.22, 0x333333, { parent: omer });
+    addBox(0.1, 0.06, 0.05, 0.14, 0.1, 0.22, 0x333333, { parent: omer });
+    // Legs
+    addBox(-0.1, 0.4, 0, 0.15, 0.65, 0.15, 0x1a1a2e, { parent: omer });
+    addBox(0.1, 0.4, 0, 0.15, 0.65, 0.15, 0x1a1a2e, { parent: omer });
+    // Body
+    addBox(0, 1.0, 0, 0.42, 0.75, 0.26, 0x222233, { parent: omer });
+    // Head
+    const oHead = new THREE.Mesh(new THREE.SphereGeometry(0.18, 14, 14), skinMat);
+    oHead.position.set(0, 1.55, 0);
+    omer.add(oHead);
+    // Hair (short, dark - only top of head)
+    const oHair = new THREE.Mesh(new THREE.SphereGeometry(0.19, 14, 7, 0, Math.PI * 2, 0, Math.PI * 0.4), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+    oHair.position.set(0, 1.6, -0.02);
+    omer.add(oHair);
+    // Beard
+    const beardMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+    const beard = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 6, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), beardMat);
+    beard.position.set(0, 1.44, 0.06);
+    beard.scale.set(1, 0.8, 0.7);
+    omer.add(beard);
+    // Eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), eyeMat);
+    eyeL.position.set(-0.06, 1.57, 0.16);
+    omer.add(eyeL);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 6), eyeMat);
+    eyeR.position.set(0.06, 1.57, 0.16);
+    omer.add(eyeR);
+    // Left arm outstretched forward holding flowers
+    addBox(-0.28, 1.0, 0, 0.11, 0.4, 0.11, 0x222233, { parent: omer }); // upper arm
+    addBox(-0.28, 1.0, 0.35, 0.1, 0.1, 0.35, 0x222233, { parent: omer }); // forearm reaching forward
+    // Left hand
+    const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), skinMat);
+    lHand.position.set(-0.28, 1.0, 0.55);
+    omer.add(lHand);
+    // Flowers bouquet (in front of outstretched hand)
+    const bouquet = new THREE.Group();
+    bouquet.position.set(-0.28, 1.05, 0.65);
+    const flowerCols = [0xFF69B4, 0xFF6347, 0xFFD700, 0xFF1493, 0xFF8C00, 0xDA70D6];
+    flowerCols.forEach((c, i) => {
+      const f = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshLambertMaterial({ color: c }));
+      f.position.set((i % 3 - 1) * 0.04, Math.floor(i / 3) * 0.04, (i % 2) * 0.025);
+      bouquet.add(f);
+    });
+    const stemMat = new THREE.MeshLambertMaterial({ color: 0x228B22 });
+    for (let i = 0; i < 4; i++) {
+      const st = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.18, 4), stemMat);
+      st.position.set((i - 1.5) * 0.025, -0.1, 0);
+      bouquet.add(st);
+    }
+    // Wrapping paper
+    const wrap = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 8), new THREE.MeshLambertMaterial({ color: 0xFFE4E1 }));
+    wrap.position.set(0, -0.12, 0);
+    wrap.rotation.x = Math.PI;
+    bouquet.add(wrap);
+    omer.add(bouquet);
+    // Right arm at side holding RedBull
+    addBox(0.28, 0.9, 0, 0.11, 0.5, 0.11, 0x222233, { parent: omer });
+    const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), skinMat);
+    rHand.position.set(0.28, 0.6, 0.05);
+    omer.add(rHand);
+    // RedBull can
+    const rbCan = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.11, 8), new THREE.MeshLambertMaterial({ color: 0x1E3A6E }));
+    rbCan.position.set(0.28, 0.58, 0.05);
+    omer.add(rbCan);
+    const rbTop = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.02, 8), new THREE.MeshLambertMaterial({ color: 0xCCCCCC }));
+    rbTop.position.set(0.28, 0.64, 0.05);
+    omer.add(rbTop);
+    // Red/silver label
+    const rbLabel = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.027, 0.04, 8), new THREE.MeshLambertMaterial({ color: 0xCC0000 }));
+    rbLabel.position.set(0.28, 0.56, 0.05);
+    omer.add(rbLabel);
+
+    scene3d.add(omer);
+
+    // Lights
+    scene3d.add(new THREE.AmbientLight(0xFFF0E0, 0.7));
+    const sun = new THREE.DirectionalLight(0xFFF8DC, 1.5);
+    sun.position.set(5, 10, 5);
+    sun.castShadow = true;
+    scene3d.add(sun);
+
+    // Camera looks at Ömer
+    camera.position.set(0, 1.5, 3);
+    yaw = 0;
+    pitch = -0.1;
+  }
+
+  /* ═══════════════════════════════════════════
+     BUILD CAR RIDE (3D first-person passenger)
+     ═══════════════════════════════════════════ */
+  let carRideActive = false;
+  let carRideTime = 0;
+  let carRig = null;
+
+  function buildCarRide(isNight) {
+    clearScene();
+    roomMode = 'carride';
+    carRideActive = true;
+    carRideTime = 0;
+
+    if (isNight) {
+      scene3d.background = new THREE.Color(0x0a0a2e);
+      scene3d.fog = new THREE.Fog(0x0a0a2e, 20, 60);
+    } else {
+      scene3d.background = new THREE.Color(0x87CEEB);
+      scene3d.fog = new THREE.Fog(0x87CEEB, 20, 60);
+    }
+
+    // Road (long strip)
+    const road = new THREE.Mesh(
+      new THREE.PlaneGeometry(8, 200),
+      new THREE.MeshLambertMaterial({ color: 0x444444 })
+    );
+    road.rotation.x = -Math.PI / 2;
+    road.position.set(0, -0.5, -80);
+    scene3d.add(road);
+
+    // Road lines
+    for (let i = 0; i < 40; i++) {
+      addBox(0, -0.48, -i * 5, 0.15, 0.02, 2, 0xFFFFFF);
+    }
+
+    // Grass sides
+    const grassColor = isNight ? 0x1a2a1a : 0x4a7a3a;
+    const grassL = new THREE.Mesh(new THREE.PlaneGeometry(30, 200), new THREE.MeshLambertMaterial({ color: grassColor }));
+    grassL.rotation.x = -Math.PI / 2;
+    grassL.position.set(-19, -0.51, -80);
+    scene3d.add(grassL);
+    const grassR = new THREE.Mesh(new THREE.PlaneGeometry(30, 200), new THREE.MeshLambertMaterial({ color: grassColor }));
+    grassR.rotation.x = -Math.PI / 2;
+    grassR.position.set(19, -0.51, -80);
+    scene3d.add(grassR);
+
+    // Buildings/trees along road
+    const bldgColor = isNight ? 0x2a2a3e : 0x8a7f72;
+    for (let i = 0; i < 20; i++) {
+      const side = (i % 2 === 0) ? -1 : 1;
+      const h = 3 + Math.random() * 5;
+      addBox(side * (6 + Math.random() * 3), h / 2 - 0.5, -i * 10, 2 + Math.random(), h, 2, bldgColor);
+    }
+
+    // ── CAR RIG (moves with camera so interior stays around player) ──
+    carRig = new THREE.Group();
+
+    // Dashboard (wide, visible from passenger)
+    addBox(0, -0.1, -0.8, 2.2, 0.35, 0.7, 0x1a1a1a, { parent: carRig });
+    // Dashboard top surface
+    addBox(0, 0.1, -0.9, 2.0, 0.06, 0.5, 0x222222, { parent: carRig });
+    // Center console between seats
+    addBox(0, -0.1, 0.0, 0.35, 0.3, 1.0, 0x1a1a1a, { parent: carRig });
+    // Gear shift
+    addBox(0, 0.1, -0.2, 0.06, 0.15, 0.06, 0x444444, { parent: carRig });
+    // Steering wheel (left side)
+    const steeringWheel = new THREE.Mesh(
+      new THREE.TorusGeometry(0.14, 0.018, 8, 20),
+      new THREE.MeshLambertMaterial({ color: 0x2a2a2a })
+    );
+    steeringWheel.position.set(-0.45, 0.2, -0.65);
+    steeringWheel.rotation.x = -0.4;
+    carRig.add(steeringWheel);
+    // Steering column
+    addBox(-0.45, 0.05, -0.7, 0.06, 0.06, 0.3, 0x222222, { parent: carRig });
+    // Windshield frame (no back/top wall - open view through windshield)
+    addBox(-1.1, 0.55, -1.2, 0.06, 1.0, 0.06, 0x222222, { parent: carRig }); // A-pillar left
+    addBox(1.1, 0.55, -1.2, 0.06, 1.0, 0.06, 0x222222, { parent: carRig }); // A-pillar right
+    addBox(0, 1.05, -1.2, 2.2, 0.06, 0.06, 0x222222, { parent: carRig }); // top
+    // Rearview mirror
+    addBox(0, 0.9, -1.0, 0.22, 0.08, 0.03, 0x555555, { parent: carRig });
+    // Left door panel
+    addBox(-1.05, 0.0, -0.1, 0.08, 0.7, 1.6, 0x1a1a1a, { parent: carRig });
+    // Right door panel
+    addBox(1.05, 0.0, -0.1, 0.08, 0.7, 1.6, 0x1a1a1a, { parent: carRig });
+    // Roof
+    addBox(0, 1.1, -0.1, 2.2, 0.05, 2.0, 0x181818, { parent: carRig });
+    // Seats
+    addBox(-0.45, -0.1, 0.15, 0.4, 0.4, 0.45, 0x1a1a2e, { parent: carRig }); // driver seat
+    addBox(0.45, -0.1, 0.15, 0.4, 0.4, 0.45, 0x1a1a2e, { parent: carRig }); // passenger seat
+    // Seat backs
+    addBox(-0.45, 0.25, 0.4, 0.4, 0.5, 0.08, 0x1a1a2e, { parent: carRig });
+    addBox(0.45, 0.25, 0.4, 0.4, 0.5, 0.08, 0x1a1a2e, { parent: carRig });
+
+    // Ömer (driver, left side) with beard
+    const driverGrp = new THREE.Group();
+    driverGrp.position.set(-0.45, 0, 0.1);
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xd4956a });
+    addBox(0, 0.2, 0, 0.35, 0.5, 0.25, 0x222233, { parent: driverGrp });
+    const dHead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), skinMat);
+    dHead.position.set(0, 0.65, 0);
+    driverGrp.add(dHead);
+    const dHair = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 6, 0, Math.PI * 2, 0, Math.PI * 0.4), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+    dHair.position.set(0, 0.71, -0.01);
+    driverGrp.add(dHair);
+    const dBeard = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 5, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), new THREE.MeshLambertMaterial({ color: 0x1a1a1a }));
+    dBeard.position.set(0, 0.57, 0.04);
+    dBeard.scale.set(1, 0.7, 0.6);
+    driverGrp.add(dBeard);
+    addBox(-0.12, 0.35, -0.3, 0.08, 0.08, 0.35, 0x222233, { parent: driverGrp });
+    addBox(0.12, 0.35, -0.3, 0.08, 0.08, 0.35, 0x222233, { parent: driverGrp });
+    const handL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), skinMat);
+    handL.position.set(-0.12, 0.35, -0.5);
+    driverGrp.add(handL);
+    const handR = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), skinMat);
+    handR.position.set(0.12, 0.35, -0.5);
+    driverGrp.add(handR);
+    carRig.add(driverGrp);
+
+    scene3d.add(carRig);
+
+    // Lights
+    if (isNight) {
+      scene3d.add(new THREE.AmbientLight(0x334466, 0.4));
+      const headlights = new THREE.SpotLight(0xFFFFCC, 2, 30, 0.5);
+      headlights.position.set(0, 1, -2);
+      headlights.target.position.set(0, 0, -20);
+      scene3d.add(headlights);
+      scene3d.add(headlights.target);
+      // Moon
+      const moon = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), new THREE.MeshBasicMaterial({ color: 0xEEEEDD }));
+      moon.position.set(10, 20, -40);
+      scene3d.add(moon);
+    } else {
+      scene3d.add(new THREE.AmbientLight(0xFFF0E0, 0.6));
+      const sunL = new THREE.DirectionalLight(0xFFF8DC, 1.5);
+      sunL.position.set(5, 10, -5);
+      scene3d.add(sunL);
+    }
+
+    // Camera = passenger seat (right side, lower to see interior)
+    camera.position.set(0.4, 0.45, 0.15);
+    camera.rotation.set(0, 0, 0);
+    yaw = -0.15;
+    pitch = -0.05;
+  }
+
+  /* ═══════════════════════════════════════════
+     3D KERAMIK POTTERY WHEEL
+     ═══════════════════════════════════════════ */
+  let keramikPottery = null;
+  let keramikSpinning = false;
+  let keramikSpinProgress = 0;
+  let keramikWheelMesh = null;
+  let keramikWheelDisc = null;
+  let keramikShapeType = 'vase';
+  let keramikShowcase = false;
+  let keramikDragRotation = 0;
+  let keramikDragTilt = 0;
+  let keramikDragging = false;
+  let keramikLastX = 0;
+  let keramikLastY = 0;
+
+  function buildKeramik3D() {
+    clearScene();
+    scene3d.background = new THREE.Color(0x2a1a12);
+    scene3d.fog = new THREE.Fog(0x2a1a12, 5, 15);
+    const amb = new THREE.AmbientLight(0xffeedd, 0.5);
+    scene3d.add(amb);
+    const spot = new THREE.SpotLight(0xffd4a0, 1.5, 10, 0.6);
+    spot.position.set(0, 4, 2);
+    spot.castShadow = true;
+    scene3d.add(spot);
+    const point = new THREE.PointLight(0xff8844, 0.5, 8);
+    point.position.set(-2, 2, 0);
+    scene3d.add(point);
+
+    // Wooden table
+    addBox(0, -0.3, 0, 3, 0.08, 2, 0x6b3a2a);
+    addBox(-1.3, -0.7, -0.8, 0.1, 0.8, 0.1, 0x5a3020);
+    addBox(1.3, -0.7, -0.8, 0.1, 0.8, 0.1, 0x5a3020);
+    addBox(-1.3, -0.7, 0.8, 0.1, 0.8, 0.1, 0x5a3020);
+    addBox(1.3, -0.7, 0.8, 0.1, 0.8, 0.1, 0x5a3020);
+
+    // Pottery wheel base
+    const wheelBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.45, 0.5, 0.08, 24),
+      new THREE.MeshLambertMaterial({ color: 0x888888 })
+    );
+    wheelBase.position.set(0, -0.22, 0);
+    scene3d.add(wheelBase);
+    keramikWheelMesh = wheelBase;
+
+    // Wheel platform (spinning disc with groove marks)
+    const wheelDisc = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.42, 0.42, 0.03, 24),
+      new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+    );
+    wheelDisc.position.set(0, -0.17, 0);
+    scene3d.add(wheelDisc);
+    // Groove marks on disc (visible rotation)
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const groove = new THREE.Mesh(
+        new THREE.BoxGeometry(0.35, 0.005, 0.015),
+        new THREE.MeshLambertMaterial({ color: 0x777777 })
+      );
+      groove.position.set(0, -0.15, 0);
+      groove.rotation.y = angle;
+      wheelDisc.add(groove);
+    }
+    keramikWheelDisc = wheelDisc;
+
+    // Clay lump on wheel (starting shape)
+    const clayMat = new THREE.MeshLambertMaterial({ color: 0xc4956a });
+    const clayLump = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.18, 0.12, 16),
+      clayMat
+    );
+    clayLump.position.set(0, -0.1, 0);
+    scene3d.add(clayLump);
+    keramikPottery = clayLump;
+
+    // Tools on table
+    const toolMat = new THREE.MeshLambertMaterial({ color: 0x8B6914 });
+    addBox(-0.9, -0.2, 0.3, 0.04, 0.04, 0.25, 0x8B6914);
+    addBox(-0.75, -0.2, 0.4, 0.06, 0.04, 0.15, 0x555555);
+    addBox(0.85, -0.2, -0.3, 0.04, 0.04, 0.2, 0x8B6914);
+
+    // Paint jars
+    const jarColors = [0xff4444, 0x4488ff, 0x44bb44, 0xffaa00, 0xff66cc, 0xffffff];
+    jarColors.forEach((c, i) => {
+      const jar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.03, 0.07, 8),
+        new THREE.MeshLambertMaterial({ color: c })
+      );
+      jar.position.set(0.7 + (i % 3) * 0.1, -0.19, -0.5 + Math.floor(i / 3) * 0.1);
+      scene3d.add(jar);
+    });
+
+    // Water bowl
+    const waterBowl = new THREE.Mesh(
+      new THREE.SphereGeometry(0.1, 12, 6, 0, Math.PI * 2, 0, Math.PI * 0.5),
+      new THREE.MeshLambertMaterial({ color: 0x3388bb, transparent: true, opacity: 0.6 })
+    );
+    waterBowl.position.set(-0.7, -0.22, -0.4);
+    scene3d.add(waterBowl);
+
+    // Brick back wall
+    addBox(0, 1.2, -2.5, 6, 3, 0.2, 0x8B4513);
+
+    camera.position.set(0, 0.8, 2);
+    camera.rotation.set(-0.35, 0, 0);
+    canvas.style.display = 'block';
+    renderer.render(scene3d, camera);
+
+    keramikSpinProgress = 0;
+    keramikSpinning = false;
+    document.getElementById('keramik-step1').style.display = '';
+    document.getElementById('keramik-step2').style.display = 'none';
+    document.getElementById('keramik-step3').style.display = 'none';
+    requestAnimationFrame(animateKeramik);
+  }
+
+  let keramikSpinSpeed = 0;
+  let keramikLiftY = 0;
+  let keramikTargetLiftY = 0;
+
+  function animateKeramik() {
+    if (state.currentScene !== 'minigame') return;
+    if (keramikShowcase && keramikPottery) {
+      // Smoothly lift pottery up
+      keramikLiftY += (keramikTargetLiftY - keramikLiftY) * 0.05;
+      keramikPottery.position.y = -0.15 + keramikLiftY;
+      keramikPottery.rotation.y = keramikDragRotation;
+      keramikPottery.rotation.x = keramikDragTilt;
+      // Slowly auto-rotate if not dragging
+      if (!keramikDragging) {
+        keramikDragRotation += 0.008;
+      }
+    } else if (keramikSpinSpeed > 0.001) {
+      if (keramikPottery) keramikPottery.rotation.y += keramikSpinSpeed;
+      if (keramikWheelMesh) keramikWheelMesh.rotation.y += keramikSpinSpeed;
+      if (keramikWheelDisc) keramikWheelDisc.rotation.y += keramikSpinSpeed;
+      keramikSpinSpeed *= 0.97;
+    }
+    renderer.render(scene3d, camera);
+    requestAnimationFrame(animateKeramik);
+  }
+
+  function keramikMorphToShape(shape) {
+    if (!keramikPottery) return;
+    scene3d.remove(keramikPottery);
+    const clayMat = new THREE.MeshLambertMaterial({ color: 0xc4956a, side: THREE.DoubleSide });
+    let points;
+    switch (shape) {
+      case 'vase':
+        points = [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(0.14, 0), new THREE.Vector2(0.16, 0.03),
+          new THREE.Vector2(0.15, 0.08), new THREE.Vector2(0.12, 0.15),
+          new THREE.Vector2(0.09, 0.22), new THREE.Vector2(0.08, 0.28),
+          new THREE.Vector2(0.1, 0.34), new THREE.Vector2(0.09, 0.38),
+          new THREE.Vector2(0.07, 0.4), new THREE.Vector2(0, 0.4),
+        ];
+        break;
+      case 'bowl':
+        points = [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(0.06, 0), new THREE.Vector2(0.15, 0.02),
+          new THREE.Vector2(0.2, 0.05), new THREE.Vector2(0.22, 0.1),
+          new THREE.Vector2(0.2, 0.14), new THREE.Vector2(0.18, 0.13),
+          new THREE.Vector2(0.16, 0.08), new THREE.Vector2(0.1, 0.04),
+          new THREE.Vector2(0, 0.03),
+        ];
+        break;
+      case 'cup':
+        points = [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(0.09, 0), new THREE.Vector2(0.1, 0.02),
+          new THREE.Vector2(0.1, 0.18), new THREE.Vector2(0.11, 0.22),
+          new THREE.Vector2(0.12, 0.25), new THREE.Vector2(0.1, 0.25),
+          new THREE.Vector2(0.08, 0.22), new THREE.Vector2(0.08, 0.04),
+          new THREE.Vector2(0, 0.03),
+        ];
+        break;
+      case 'plate':
+        points = [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(0.18, 0), new THREE.Vector2(0.22, 0.01),
+          new THREE.Vector2(0.24, 0.04), new THREE.Vector2(0.23, 0.06),
+          new THREE.Vector2(0.21, 0.05), new THREE.Vector2(0.19, 0.02),
+          new THREE.Vector2(0.04, 0.015), new THREE.Vector2(0, 0.015),
+        ];
+        break;
+    }
+    const geo = new THREE.LatheGeometry(points, 24);
+    const group = new THREE.Group();
+    const mainMesh = new THREE.Mesh(geo, clayMat);
+    group.add(mainMesh);
+    // For flat shapes (plate/bowl), add a top disc so the painted motif is visible from above
+    if (shape === 'plate') {
+      const topDisc = new THREE.Mesh(
+        new THREE.CircleGeometry(0.21, 24),
+        clayMat.clone()
+      );
+      topDisc.rotation.x = -Math.PI / 2;
+      topDisc.position.y = 0.02;
+      topDisc.name = 'topDisc';
+      group.add(topDisc);
+    } else if (shape === 'bowl') {
+      const topDisc = new THREE.Mesh(
+        new THREE.CircleGeometry(0.19, 24),
+        clayMat.clone()
+      );
+      topDisc.rotation.x = -Math.PI / 2;
+      topDisc.position.y = 0.04;
+      topDisc.name = 'topDisc';
+      group.add(topDisc);
+    }
+    group.position.set(0, -0.15, 0);
+    scene3d.add(group);
+    keramikPottery = group;
+  }
+
+  function keramikInitPaintCanvas() {
+    const colors = ['#ff4444', '#4488ff', '#44bb44', '#ffaa00', '#ff66cc', '#ffffff', '#222222', '#8B4513'];
+    const cContainer = document.getElementById('keramik-paint-colors');
+    cContainer.innerHTML = '';
+    let paintColor = '#ff4444';
+    colors.forEach(c => {
+      const swatch = document.createElement('div');
+      swatch.style.cssText = `width:30px;height:30px;border-radius:50%;background:${c};border:3px solid ${c === '#ff4444' ? '#fff' : 'transparent'};cursor:pointer;`;
+      swatch.onclick = () => {
+        paintColor = c;
+        cContainer.querySelectorAll('div').forEach(d => d.style.border = '3px solid transparent');
+        swatch.style.border = '3px solid #fff';
+      };
+      cContainer.appendChild(swatch);
+    });
+
+    const cvs = document.getElementById('keramik-paint-canvas');
+    const ctx = cvs.getContext('2d');
+    ctx.fillStyle = '#f5e6d3';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+    let painting = false;
+    function getPos(e) {
+      const r = cvs.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: (t.clientX - r.left) * (cvs.width / r.width), y: (t.clientY - r.top) * (cvs.height / r.height) };
+    }
+    function startPaint(e) { painting = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+    function doPaint(e) { if (!painting) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.strokeStyle = paintColor; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke(); e.preventDefault(); }
+    function stopPaint() { painting = false; }
+    cvs.addEventListener('mousedown', startPaint);
+    cvs.addEventListener('mousemove', doPaint);
+    cvs.addEventListener('mouseup', stopPaint);
+    cvs.addEventListener('touchstart', startPaint, { passive: false });
+    cvs.addEventListener('touchmove', doPaint, { passive: false });
+    cvs.addEventListener('touchend', stopPaint);
+  }
+
+  /* ═══════════════════════════════════════════
+     3D CINEMA SCENE
+     ═══════════════════════════════════════════ */
+  function buildCinema3D() {
+    clearScene();
+    scene3d.background = new THREE.Color(0x050508);
+    scene3d.fog = new THREE.Fog(0x050508, 8, 20);
+
+    // Dim ambient
+    scene3d.add(new THREE.AmbientLight(0x111122, 0.3));
+    // Screen glow
+    const screenLight = new THREE.PointLight(0x4466aa, 1.5, 12);
+    screenLight.position.set(0, 3, -6);
+    scene3d.add(screenLight);
+    // Subtle side lights
+    const wallLight1 = new THREE.PointLight(0xff6622, 0.2, 6);
+    wallLight1.position.set(-5, 2, -2);
+    scene3d.add(wallLight1);
+    const wallLight2 = new THREE.PointLight(0xff6622, 0.2, 6);
+    wallLight2.position.set(5, 2, -2);
+    scene3d.add(wallLight2);
+
+    // Big screen - loads kino.gif if available
+    const screenGeo = new THREE.PlaneGeometry(7, 3.5);
+    const screenMat = new THREE.MeshBasicMaterial({
+      color: 0x1a1a4e,
+      side: THREE.DoubleSide,
+    });
+    const screen = new THREE.Mesh(screenGeo, screenMat);
+    screen.position.set(0, 3.2, -7);
+    scene3d.add(screen);
+    // Try loading GIF as video texture via img element
+    const gifImg = new Image();
+    gifImg.src = 'kino.gif';
+    gifImg.onload = () => {
+      const gifCanvas = document.createElement('canvas');
+      gifCanvas.width = 512;
+      gifCanvas.height = 256;
+      const gifCtx = gifCanvas.getContext('2d');
+      const gifTex = new THREE.CanvasTexture(gifCanvas);
+      screen.material = new THREE.MeshBasicMaterial({ map: gifTex, side: THREE.DoubleSide });
+      function drawGif() {
+        if (state.currentScene !== 'cinema3d') return;
+        gifCtx.drawImage(gifImg, 0, 0, gifCanvas.width, gifCanvas.height);
+        gifTex.needsUpdate = true;
+        requestAnimationFrame(drawGif);
+      }
+      drawGif();
+    };
+    // Screen frame
+    const frameMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    addBox(0, 3.2, -7.05, 7.3, 0.15, 0.1, 0x111111); // top
+    addBox(0, 1.35, -7.05, 7.3, 0.15, 0.1, 0x111111); // bottom
+    addBox(-3.6, 3.2, -7.05, 0.15, 3.8, 0.1, 0x111111); // left
+    addBox(3.6, 3.2, -7.05, 0.15, 3.8, 0.1, 0x111111); // right
+    // Screen shimmer effect
+    const screenOverlay = new THREE.Mesh(
+      new THREE.PlaneGeometry(6.8, 3.3),
+      new THREE.MeshBasicMaterial({ color: 0x2233aa, transparent: true, opacity: 0.15 })
+    );
+    screenOverlay.position.set(0, 3.2, -6.98);
+    scene3d.add(screenOverlay);
+
+    // Floor (carpeted)
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(14, 16),
+      new THREE.MeshLambertMaterial({ color: 0x1a0a0a })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    scene3d.add(floor);
+
+    // Walls
+    addBox(-6.5, 3, 0, 0.2, 6, 16, 0x1a1015); // left wall
+    addBox(6.5, 3, 0, 0.2, 6, 16, 0x1a1015); // right wall
+    addBox(0, 3, -7.2, 14, 6, 0.2, 0x0a0a0f); // back wall
+    // Ceiling
+    addBox(0, 6, 0, 14, 0.15, 16, 0x0a0a0f);
+
+    // Seat rows (5 rows, ascending)
+    const seatMat = new THREE.MeshLambertMaterial({ color: 0x6a1515 });
+    const seatBackMat = new THREE.MeshLambertMaterial({ color: 0x4a0e0e });
+    for (let row = 0; row < 5; row++) {
+      const z = 2 + row * 1.8;
+      const y = row * 0.35;
+      const seatsInRow = row < 2 ? 8 : 10;
+      const startX = -(seatsInRow - 1) * 0.6;
+      for (let s = 0; s < seatsInRow; s++) {
+        const x = startX + s * 1.2;
+        // Seat cushion
+        const seat = new THREE.Mesh(
+          new THREE.BoxGeometry(0.5, 0.12, 0.4),
+          seatMat
+        );
+        seat.position.set(x, y + 0.45, z);
+        scene3d.add(seat);
+        // Seat back
+        const back = new THREE.Mesh(
+          new THREE.BoxGeometry(0.5, 0.55, 0.08),
+          seatBackMat
+        );
+        back.position.set(x, y + 0.75, z + 0.2);
+        scene3d.add(back);
+        // Armrests
+        const armGeo = new THREE.BoxGeometry(0.06, 0.15, 0.35);
+        const armL = new THREE.Mesh(armGeo, new THREE.MeshLambertMaterial({ color: 0x333333 }));
+        armL.position.set(x - 0.26, y + 0.52, z);
+        scene3d.add(armL);
+      }
+    }
+
+    // Ömer and Mali silhouettes (row 3, center)
+    const coupleZ = 2 + 2 * 1.8;
+    const coupleY = 2 * 0.35;
+    // Ömer
+    const omerHead = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 10), new THREE.MeshLambertMaterial({ color: 0x1a1a1a }));
+    omerHead.position.set(-0.3, coupleY + 1.15, coupleZ);
+    scene3d.add(omerHead);
+    const omerBody = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.4, 0.2), new THREE.MeshLambertMaterial({ color: 0x1a1a22 }));
+    omerBody.position.set(-0.3, coupleY + 0.85, coupleZ);
+    scene3d.add(omerBody);
+    // Mali
+    const maliHead = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), new THREE.MeshLambertMaterial({ color: 0x1a1a1a }));
+    maliHead.position.set(0.3, coupleY + 1.1, coupleZ);
+    scene3d.add(maliHead);
+    // Mali hair
+    const maliHairGeo = new THREE.SphereGeometry(0.15, 10, 5, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const maliHair = new THREE.Mesh(maliHairGeo, new THREE.MeshLambertMaterial({ color: 0x1a0a0a }));
+    maliHair.position.set(0.3, coupleY + 1.18, coupleZ);
+    scene3d.add(maliHair);
+    const maliBody = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.35, 0.2), new THREE.MeshLambertMaterial({ color: 0x2a1520 }));
+    maliBody.position.set(0.3, coupleY + 0.83, coupleZ);
+    scene3d.add(maliBody);
+
+    // Popcorn between them
+    const popcornBucket = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.06, 0.14, 8),
+      new THREE.MeshLambertMaterial({ color: 0xcc3333 })
+    );
+    popcornBucket.position.set(0, coupleY + 0.58, coupleZ - 0.1);
+    scene3d.add(popcornBucket);
+    // Popcorn kernels
+    for (let i = 0; i < 6; i++) {
+      const kernel = new THREE.Mesh(
+        new THREE.SphereGeometry(0.02, 4, 4),
+        new THREE.MeshLambertMaterial({ color: 0xFFEE88 })
+      );
+      kernel.position.set(
+        0 + (Math.random() - 0.5) * 0.06,
+        coupleY + 0.67,
+        coupleZ - 0.1 + (Math.random() - 0.5) * 0.06
+      );
+      scene3d.add(kernel);
+    }
+
+    // Wall sconces (dim orange lights along walls)
+    for (let i = 0; i < 4; i++) {
+      const z = -3 + i * 3;
+      const sconce1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.08), new THREE.MeshBasicMaterial({ color: 0x442200 }));
+      sconce1.position.set(-6.35, 2.5, z);
+      scene3d.add(sconce1);
+      const sconce2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.08), new THREE.MeshBasicMaterial({ color: 0x442200 }));
+      sconce2.position.set(6.35, 2.5, z);
+      scene3d.add(sconce2);
+    }
+
+    // Aisle floor strips
+    const aisleStrip = new THREE.MeshBasicMaterial({ color: 0x221108 });
+    for (let i = 0; i < 8; i++) {
+      const strip = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.04), aisleStrip);
+      strip.rotation.x = -Math.PI / 2;
+      strip.position.set(0, 0.01, 1 + i * 1.2);
+      scene3d.add(strip);
+    }
+
+    // Camera = sitting behind couple, looking at screen
+    camera.position.set(0, coupleY + 1.5, coupleZ + 1.5);
+    camera.rotation.set(-0.15, 0, 0);
+
+    renderer.render(scene3d, camera);
+    requestAnimationFrame(animateCinema);
+  }
+
+  let cinemaTime = 0;
+  function animateCinema() {
+    if (state.currentScene !== 'cinema3d') return;
+    cinemaTime += 0.016;
+    // Subtle screen color change
+    const screenMesh = scene3d.children.find(c => c.geometry && c.geometry.type === 'PlaneGeometry' && c.position.z < -6.9 && c.position.z > -7.1 && c.material.opacity === undefined);
+    // Gentle ambient sway
+    camera.position.x = Math.sin(cinemaTime * 0.2) * 0.02;
+    camera.rotation.y = Math.sin(cinemaTime * 0.15) * 0.01;
+    renderer.render(scene3d, camera);
+    requestAnimationFrame(animateCinema);
+  }
+
+  /* ═══════════════════════════════════════════
+     TOUCH + KEYBOARD CONTROLS
+     ═══════════════════════════════════════════ */
+  const joystick = { active: false, touchId: null, startX: 0, startY: 0, dx: 0, dy: 0 };
+  const look = { active: false, touchId: null, lastX: 0, lastY: 0 };
+  let moveF = false, moveB = false, moveL = false, moveR = false;
+
+  function setupControls() {
+    const joystickZone = document.getElementById('joystick-zone');
+    const lookZone = document.getElementById('look-zone');
+    const interactBtn = document.getElementById('interact-btn');
+    const knob = document.getElementById('joystick-knob');
+    const BASE_R = 60;
+
+    // Joystick
+    joystickZone.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const t = e.changedTouches[0];
+      joystick.active = true;
+      joystick.touchId = t.identifier;
+      const rect = joystickZone.getBoundingClientRect();
+      joystick.startX = rect.left + BASE_R;
+      joystick.startY = rect.top + BASE_R;
+    }, { passive: false });
+
+    document.addEventListener('touchmove', e => {
+      for (const t of e.changedTouches) {
+        if (joystick.active && t.identifier === joystick.touchId) {
+          let dx = t.clientX - joystick.startX;
+          let dy = t.clientY - joystick.startY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > BASE_R) { dx = dx / dist * BASE_R; dy = dy / dist * BASE_R; }
+          joystick.dx = dx / BASE_R;
+          joystick.dy = dy / BASE_R;
+          knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        }
+        if (look.active && t.identifier === look.touchId) {
+          const ddx = t.clientX - look.lastX;
+          const ddy = t.clientY - look.lastY;
+          yaw -= ddx * 0.004;
+          pitch -= ddy * 0.004;
+          pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch));
+          look.lastX = t.clientX;
+          look.lastY = t.clientY;
+        }
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchend', e => {
+      for (const t of e.changedTouches) {
+        if (joystick.active && t.identifier === joystick.touchId) {
+          joystick.active = false;
+          joystick.dx = 0;
+          joystick.dy = 0;
+          knob.style.transform = 'translate(-50%, -50%)';
+        }
+        if (look.active && t.identifier === look.touchId) {
+          look.active = false;
+        }
+      }
+    });
+
+    lookZone.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (!look.active) {
+        const t = e.changedTouches[0];
+        look.active = true;
+        look.touchId = t.identifier;
+        look.lastX = t.clientX;
+        look.lastY = t.clientY;
+      }
+    }, { passive: false });
+
+    interactBtn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      handleInteraction();
+    }, { passive: false });
+    interactBtn.addEventListener('click', handleInteraction);
+
+    // Keyboard
+    document.addEventListener('keydown', e => {
+      switch (e.code) {
+        case 'KeyW': case 'ArrowUp': moveF = true; break;
+        case 'KeyS': case 'ArrowDown': moveB = true; break;
+        case 'KeyA': case 'ArrowLeft': moveL = true; break;
+        case 'KeyD': case 'ArrowRight': moveR = true; break;
+        case 'KeyE': handleInteraction(); break;
+      }
+    });
+    document.addEventListener('keyup', e => {
+      switch (e.code) {
+        case 'KeyW': case 'ArrowUp': moveF = false; break;
+        case 'KeyS': case 'ArrowDown': moveB = false; break;
+        case 'KeyA': case 'ArrowLeft': moveL = false; break;
+        case 'KeyD': case 'ArrowRight': moveR = false; break;
+      }
+    });
+
+    // Mouse (desktop)
+    canvas.addEventListener('click', () => {
+      if (state.currentScene === 'room' || state.currentScene === 'staircase') {
+        if (!('ontouchstart' in window)) canvas.requestPointerLock();
+      }
+    });
+    document.addEventListener('pointerlockchange', () => {});
+    document.addEventListener('mousemove', e => {
+      if (document.pointerLockElement === canvas) {
+        yaw -= e.movementX * 0.002;
+        pitch -= e.movementY * 0.002;
+        pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch));
+      }
+    });
+  }
+
+  function handleInteraction() {
+    if (!nearZone) return;
+    if (nearZone.name === 'cat') startCatPetting();
+    else if (nearZone.name === 'makeup') startMakeup();
+    else if (nearZone.name === 'window') startWindowView();
+    else if (nearZone.name === 'door') Game.switchScene('meeting');
+  }
+
+  function showControls() {
+    document.getElementById('hud').classList.add('active');
+    const isTouch = 'ontouchstart' in window;
+    if (isTouch) {
+      document.getElementById('joystick-zone').classList.add('active');
+      document.getElementById('look-zone').classList.add('active');
+    }
+  }
+
+  function hideControls() {
+    document.getElementById('hud').classList.remove('active');
+    document.getElementById('joystick-zone').classList.remove('active');
+    document.getElementById('look-zone').classList.remove('active');
+    document.getElementById('interact-btn').classList.remove('visible');
+    document.getElementById('interact-btn').style.display = 'none';
+    document.getElementById('prompt').classList.remove('show');
+    document.getElementById('mission-tracker').style.display = 'none';
+    document.exitPointerLock?.();
+  }
+
+  function updateMissions() {
+    const catCheck = document.getElementById('mission-cat-check');
+    const makeupCheck = document.getElementById('mission-makeup-check');
+    const windowCheck = document.getElementById('mission-window-check');
+    const catItem = document.getElementById('mission-cat');
+    const makeupItem = document.getElementById('mission-makeup');
+    const windowItem = document.getElementById('mission-window');
+    if (state.catPetted) {
+      catCheck.textContent = '✅';
+      catItem.style.opacity = '0.4';
+      catItem.style.textDecoration = 'line-through';
+    } else {
+      catCheck.textContent = '⬜';
+      catItem.style.opacity = '0.9';
+      catItem.style.textDecoration = '';
+    }
+    if (state.makeupDone) {
+      makeupCheck.textContent = '✅';
+      makeupItem.style.opacity = '0.4';
+      makeupItem.style.textDecoration = 'line-through';
+    } else {
+      makeupCheck.textContent = '⬜';
+      makeupItem.style.opacity = '0.9';
+      makeupItem.style.textDecoration = '';
+    }
+    if (state.catPetted && state.makeupDone) {
+      windowCheck.textContent = '⬜';
+      windowItem.style.opacity = '0.9';
+    } else {
+      windowCheck.textContent = '🔒';
+      windowItem.style.opacity = '0.5';
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     ROOM INTERACTIONS
+     ═══════════════════════════════════════════ */
+  function startCatPetting() {
+    hideControls();
+    state.catProgress = 0;
+    document.getElementById('cat-progress').style.width = '0%';
+    document.getElementById('cat-purr').classList.remove('show');
+    document.getElementById('cat-hearts-container').innerHTML = '';
+    document.getElementById('cat-tap-btn').textContent = 'Streicheln 🐱';
+    document.getElementById('cat-tap-btn').style.pointerEvents = '';
+    document.getElementById('overlay-cat').classList.add('active');
+  }
+
+  const makeupSteps = [
+    { id: 'mk-foundation', label: 'Foundation auftragen ✨', progress: 25 },
+    { id: 'mk-eyeshadow', label: 'Lidschatten auftragen 💜', progress: 50 },
+    { id: 'mk-lipstick', label: 'Lippenstift auftragen 💋', progress: 75 },
+    { id: 'mk-blush', label: 'Rouge auftragen 🌸', progress: 100 },
+  ];
+  let makeupStep = 0;
+
+  function startMakeup() {
+    hideControls();
+    state.makeupProgress = 0;
+    makeupStep = 0;
+    document.getElementById('makeup-progress').style.width = '0%';
+    document.getElementById('makeup-label').textContent = makeupSteps[0].label;
+    document.getElementById('makeup-sparkles').innerHTML = '';
+    document.getElementById('makeup-tap-btn').textContent = 'Auftragen 💄';
+    document.getElementById('makeup-tap-btn').style.pointerEvents = '';
+    makeupSteps.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (el) el.style.display = 'none';
+    });
+    document.getElementById('overlay-makeup').classList.add('active');
+  }
+
+  document.getElementById('cat-tap-btn').addEventListener('click', () => {
+    state.catProgress = Math.min(100, state.catProgress + 14);
+    document.getElementById('cat-progress').style.width = state.catProgress + '%';
+
+    // Petting hand animation
+    const hand = document.getElementById('pet-hand');
+    hand.classList.remove('petting');
+    void hand.offsetWidth;
+    hand.classList.add('petting');
+
+    // Cat happy bounce
+    const svg = document.querySelector('.cat-svg');
+    svg.classList.remove('happy');
+    void svg.offsetWidth;
+    svg.classList.add('happy');
+
+    // Spawn floating heart
+    const heartsContainer = document.getElementById('cat-hearts-container');
+    const heart = document.createElement('div');
+    heart.className = 'cat-float-heart';
+    heart.textContent = ['💛', '🧡', '❤️', '💕'][Math.floor(Math.random() * 4)];
+    heart.style.left = (30 + Math.random() * 40) + '%';
+    heart.style.top = '40%';
+    heartsContainer.appendChild(heart);
+    setTimeout(() => heart.remove(), 1300);
+
+    // Show purr text
+    if (state.catProgress > 30) {
+      document.getElementById('cat-purr').classList.add('show');
+    }
+
+    if (state.catProgress >= 100) {
+      state.catPetted = true;
+      document.getElementById('cat-tap-btn').textContent = 'So süß! 💛';
+      document.getElementById('cat-tap-btn').style.pointerEvents = 'none';
+      setTimeout(() => {
+        document.getElementById('overlay-cat').classList.remove('active');
+        refreshRoomZones();
+        showControls();
+        updateMissions();
+        document.getElementById('mission-tracker').style.display = '';
+      }, 1500);
+    }
+  });
+
+  document.getElementById('makeup-tap-btn').addEventListener('click', () => {
+    if (makeupStep >= makeupSteps.length) return;
+
+    const step = makeupSteps[makeupStep];
+    state.makeupProgress = step.progress;
+    document.getElementById('makeup-progress').style.width = state.makeupProgress + '%';
+
+    // Show makeup layer
+    const layer = document.getElementById(step.id);
+    if (layer) layer.style.display = 'block';
+
+    // Spawn sparkle
+    const sparkles = document.getElementById('makeup-sparkles');
+    for (let i = 0; i < 3; i++) {
+      const s = document.createElement('div');
+      s.className = 'makeup-sparkle';
+      s.textContent = '✨';
+      s.style.left = (20 + Math.random() * 60) + '%';
+      s.style.top = (30 + Math.random() * 40) + '%';
+      s.style.animationDelay = (i * 0.1) + 's';
+      sparkles.appendChild(s);
+      setTimeout(() => s.remove(), 1000);
+    }
+
+    makeupStep++;
+
+    if (makeupStep < makeupSteps.length) {
+      document.getElementById('makeup-label').textContent = makeupSteps[makeupStep].label;
+    } else {
+      state.makeupDone = true;
+      document.getElementById('makeup-label').textContent = 'Fertig!';
+      document.getElementById('makeup-tap-btn').textContent = 'Weiter 💛';
+      document.getElementById('makeup-tap-btn').style.pointerEvents = 'none';
+      setTimeout(() => {
+        document.getElementById('overlay-makeup').classList.remove('active');
+        refreshRoomZones();
+        showControls();
+        updateMissions();
+        document.getElementById('mission-tracker').style.display = '';
+      }, 1800);
+    }
+  });
+
+  function refreshRoomZones() {
+    interactionZones = [];
+    if (!state.catPetted) {
+      interactionZones.push({ name: 'cat', x: -2.8, z: 1.6, radius: 1.8, label: 'Katze streicheln 🐱' });
+    }
+    if (!state.makeupDone) {
+      interactionZones.push({ name: 'makeup', x: 3.5, z: -2.5, radius: 1.8, label: 'Fertig machen 💄' });
+    }
+    if (state.catPetted && state.makeupDone) {
+      interactionZones.push({ name: 'window', x: 0, z: -4.5, radius: 2, label: 'Aus dem Fenster schauen 🪟' });
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     WINDOW VIEW (Camera animation)
+     ═══════════════════════════════════════════ */
+  let windowTimeouts = [];
+  function startWindowView() {
+    state.windowViewing = true;
+    hideControls();
+    cameraAnimating = true;
+    cameraTarget = new THREE.Vector3(0, 1.7, -4.2);
+    cameraLookTarget = new THREE.Vector3(0, 1, -12);
+
+    windowTimeouts.forEach(t => clearTimeout(t));
+    windowTimeouts = [];
+
+    windowTimeouts.push(setTimeout(() => {
+      if (state.currentScene !== 'room') return;
+      document.getElementById('window-msg').textContent = 'was macht der schon hier';
+      document.getElementById('window-msg').style.display = 'block';
+    }, 1500));
+
+    windowTimeouts.push(setTimeout(() => {
+      if (state.currentScene !== 'room') return;
+      document.getElementById('window-btn').style.display = 'block';
+    }, 3000));
+  }
+
+  /* ═══════════════════════════════════════════
+     ANIMATION LOOP
+     ═══════════════════════════════════════════ */
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const now = performance.now();
+    const delta = Math.min((now - prevTime) / 1000, 0.1);
+    prevTime = now;
+
+    if (state.currentScene === 'room' || state.currentScene === 'staircase') {
+      if (cameraAnimating && cameraTarget) {
+        camera.position.lerp(cameraTarget, 0.05);
+        const lookDir = new THREE.Vector3();
+        lookDir.subVectors(cameraLookTarget, camera.position).normalize();
+        const targetYaw = Math.atan2(-lookDir.x, -lookDir.z);
+        const targetPitch = Math.asin(lookDir.y);
+        yaw += (targetYaw - yaw) * 0.05;
+        pitch += (targetPitch - pitch) * 0.05;
+      } else if (!state.windowViewing) {
+        // Player movement - direct and responsive
+        let inputZ = Number(moveF) - Number(moveB) - joystick.dy;
+        let inputX = Number(moveR) - Number(moveL) + joystick.dx;
+        const inputLen = Math.sqrt(inputX * inputX + inputZ * inputZ);
+
+        if (inputLen > 0.1) {
+          inputX /= inputLen;
+          inputZ /= inputLen;
+          const clampedLen = Math.min(inputLen, 1.0);
+
+          const speed = 3.5 * clampedLen;
+          const sinY = Math.sin(yaw);
+          const cosY = Math.cos(yaw);
+
+          // Forward/back relative to camera direction
+          const moveX = (-inputZ * sinY + inputX * cosY) * speed * delta;
+          const moveZ = (-inputZ * cosY - inputX * sinY) * speed * delta;
+
+          camera.position.x += moveX;
+          camera.position.z += moveZ;
+        }
+
+        // Bounds (keep player away from walls and furniture)
+        if (roomMode === 'room') {
+          camera.position.x = Math.max(-3.3, Math.min(3.1, camera.position.x));
+          camera.position.z = Math.max(-4.2, Math.min(4.2, camera.position.z));
+          camera.position.y = 1.7;
+        } else if (roomMode === 'staircase') {
+          camera.position.x = Math.max(-1.2, Math.min(1.2, camera.position.x));
+          camera.position.z = Math.max(-9.5, Math.min(5.5, camera.position.z));
+          camera.position.y = 1.7;
+        }
+      }
+
+      camera.rotation.order = 'YXZ';
+      camera.rotation.y = yaw;
+      camera.rotation.x = pitch;
+
+      // Check interaction zones
+      if (!cameraAnimating && !state.windowViewing) {
+        const prompt = document.getElementById('prompt');
+        const interactBtnEl = document.getElementById('interact-btn');
+        nearZone = null;
+
+        for (const zone of interactionZones) {
+          const dx = camera.position.x - zone.x;
+          const dz = camera.position.z - zone.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          if (dist < zone.radius) {
+            nearZone = zone;
+            break;
+          }
+        }
+
+        if (nearZone) {
+          prompt.textContent = nearZone.label;
+          prompt.classList.add('show');
+          interactBtnEl.style.display = 'flex';
+          interactBtnEl.classList.add('visible');
+        } else {
+          prompt.classList.remove('show');
+          interactBtnEl.classList.remove('visible');
+          interactBtnEl.style.display = '';
+        }
+      }
+
+      renderer.render(scene3d, camera);
+    }
+
+    // Car ride animation (3D)
+    if (carRideActive && (state.currentScene === 'cardrive' || state.currentScene === 'drivecinema' || state.currentScene === 'drivehome')) {
+      carRideTime += delta;
+      const zMove = -6 * delta;
+      if (carRig) {
+        carRig.position.z += zMove;
+        camera.position.x = 0.4 + Math.sin(carRideTime * 0.5) * 0.03;
+        camera.position.y = 0.45 + Math.sin(carRideTime * 1.2) * 0.015;
+        camera.position.z = carRig.position.z + 0.15;
+      }
+      camera.rotation.order = 'YXZ';
+      camera.rotation.y = -0.15 + Math.sin(carRideTime * 0.3) * 0.015;
+      camera.rotation.x = -0.05;
+      renderer.render(scene3d, camera);
+    }
+
+    // Meeting scene render (3D behind overlay)
+    if (state.currentScene === 'meeting' && roomMode === 'meeting3d') {
+      renderer.render(scene3d, camera);
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     MINI GAMES
+     ═══════════════════════════════════════════ */
+
+  // ── KERAMIK ──
+  let keramikPhase = 'shape'; // 'shape' or 'paint'
+  let keramikTaps = 0;
+  let keramikPaintIndex = 0;
+  const keramikColors = ['#E8A87C', '#D27D6A', '#C0392B', '#2980B9', '#27AE60', '#8E44AD', '#F39C12'];
+  let keramikChosenColor = '#E8A87C';
+
+  function initKeramikGame() {
+    keramikPhase = 'shape';
+    keramikTaps = 0;
+    keramikPaintIndex = 0;
+    const container = document.getElementById('minigame-content');
+    container.innerHTML = `
+      <div class="mg-title" id="keramik-title">Forme deine Keramik! 🏺</div>
+      <div style="text-align:center;position:relative;">
+        <svg id="keramik-svg" viewBox="0 0 200 260" width="180" style="margin:0 auto;display:block;">
+          <ellipse id="k-base" cx="100" cy="240" rx="45" ry="12" fill="#B87A3D"/>
+          <path id="k-body" d="M60 240 Q55 180 60 140 Q70 100 100 90 Q130 100 140 140 Q145 180 140 240 Z" fill="#D2A679" stroke="#B87A3D" stroke-width="2"/>
+          <ellipse id="k-rim" cx="100" cy="90" rx="42" ry="14" fill="#C89A6A" stroke="#B87A3D" stroke-width="1.5"/>
+          <ellipse cx="100" cy="90" rx="32" ry="9" fill="#3a2a1a" opacity="0.3"/>
+        </svg>
+        <div id="keramik-hands" style="position:absolute;bottom:40%;left:50%;transform:translateX(-50%);font-size:36px;opacity:0.7;">🤲</div>
+      </div>
+      <div class="interaction-progress" style="margin-top:16px;"><div class="interaction-progress-bar" id="keramik-progress"></div></div>
+      <div id="keramik-colors" style="display:none;margin:12px auto;text-align:center;"></div>
+      <button class="interaction-tap-btn" id="keramik-btn" style="margin-top:12px;">Formen 🤲</button>
+      <button class="mg-complete-btn" id="mg-done-btn" onclick="Game.miniGameDone()">Weiter 💛</button>
+    `;
+    document.getElementById('keramik-btn').addEventListener('click', onKeramikTap);
+  }
+
+  function onKeramikTap() {
+    if (keramikPhase === 'shape') {
+      keramikTaps++;
+      const progress = Math.min(100, keramikTaps * 10);
+      document.getElementById('keramik-progress').style.width = progress + '%';
+
+      // Animate shaping
+      const body = document.getElementById('k-body');
+      const rim = document.getElementById('k-rim');
+      const wobble = Math.sin(keramikTaps * 0.5) * 3;
+      const narrow = Math.max(30, 42 - keramikTaps * 1.2);
+      rim.setAttribute('rx', narrow);
+      body.style.transform = `scaleX(${1 + wobble * 0.01})`;
+
+      // Hands animation
+      const hands = document.getElementById('keramik-hands');
+      hands.style.transform = `translateX(-50%) scale(${1.1 + Math.sin(keramikTaps) * 0.1})`;
+
+      if (keramikTaps >= 10) {
+        keramikPhase = 'paint';
+        document.getElementById('keramik-title').textContent = 'Bemale deine Keramik! 🎨';
+        document.getElementById('keramik-btn').textContent = 'Bemalen 🎨';
+        document.getElementById('keramik-hands').style.display = 'none';
+        document.getElementById('keramik-progress').style.width = '0%';
+        keramikTaps = 0;
+
+        // Show color palette
+        const colorsDiv = document.getElementById('keramik-colors');
+        colorsDiv.style.display = 'flex';
+        colorsDiv.style.gap = '8px';
+        colorsDiv.style.justifyContent = 'center';
+        colorsDiv.style.flexWrap = 'wrap';
+        colorsDiv.innerHTML = keramikColors.map((c, i) =>
+          `<div onclick="Game.keramikColor('${c}', this)" style="width:36px;height:36px;border-radius:50%;background:${c};border:3px solid ${i === 0 ? '#fff' : 'transparent'};cursor:pointer;transition:border 0.2s;"></div>`
+        ).join('');
+      }
+    } else if (keramikPhase === 'paint') {
+      keramikTaps++;
+      const progress = Math.min(100, keramikTaps * 12);
+      document.getElementById('keramik-progress').style.width = progress + '%';
+
+      // Paint sections of the vase
+      const body = document.getElementById('k-body');
+      const rim = document.getElementById('k-rim');
+      const base = document.getElementById('k-base');
+
+      if (keramikTaps <= 3) body.setAttribute('fill', keramikChosenColor);
+      else if (keramikTaps <= 5) rim.setAttribute('fill', keramikChosenColor);
+      else if (keramikTaps <= 7) base.setAttribute('fill', keramikChosenColor);
+
+      // Add decorative dots
+      const svg = document.getElementById('keramik-svg');
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', 70 + Math.random() * 60);
+      dot.setAttribute('cy', 100 + Math.random() * 120);
+      dot.setAttribute('r', 3 + Math.random() * 4);
+      dot.setAttribute('fill', keramikColors[(keramikPaintIndex++) % keramikColors.length]);
+      dot.setAttribute('opacity', '0.8');
+      svg.appendChild(dot);
+
+      if (keramikTaps >= 9) {
+        document.getElementById('keramik-btn').style.display = 'none';
+        document.getElementById('keramik-title').textContent = 'Wunderschön! 🏺✨';
+        document.getElementById('mg-done-btn').classList.add('show');
+      }
+    }
+  }
+
+  // ── BUILD-A-BEAR ──
+  const bearParts = [
+    { id: 'body', label: 'Körper', color: '#B87A3D', x: 100, y: 150, w: 80, h: 90, rx: 40 },
+    { id: 'head', label: 'Kopf', color: '#B87A3D', x: 100, y: 70, w: 60, h: 60, rx: 30 },
+    { id: 'ear-l', label: 'Ohr L', color: '#A06830', x: 75, y: 48, w: 24, h: 24, rx: 12 },
+    { id: 'ear-r', label: 'Ohr R', color: '#A06830', x: 125, y: 48, w: 24, h: 24, rx: 12 },
+    { id: 'arm-l', label: 'Arm L', color: '#B87A3D', x: 55, y: 160, w: 25, h: 55, rx: 12 },
+    { id: 'arm-r', label: 'Arm R', color: '#B87A3D', x: 145, y: 160, w: 25, h: 55, rx: 12 },
+    { id: 'leg-l', label: 'Bein L', color: '#B87A3D', x: 85, y: 235, w: 28, h: 45, rx: 14 },
+    { id: 'leg-r', label: 'Bein R', color: '#B87A3D', x: 115, y: 235, w: 28, h: 45, rx: 14 },
+    { id: 'heart', label: '❤️', color: '#e74c3c', x: 100, y: 155, w: 24, h: 24, rx: 12 },
+  ];
+  let bearPlaced = [];
+  let bearCurrentPart = 0;
+
+  function initBearGame() {
+    bearPlaced = [];
+    bearCurrentPart = 0;
+    const container = document.getElementById('minigame-content');
+    container.innerHTML = `
+      <div class="mg-title">Baue deinen Bären! 🧸</div>
+      <div style="text-align:center;position:relative;">
+        <svg id="bear-svg" viewBox="0 0 200 280" width="180" style="margin:0 auto;display:block;">
+          <!-- Outline guide -->
+          <circle cx="100" cy="60" r="50" fill="none" stroke="#8B6914" stroke-width="1" stroke-dasharray="4" opacity="0.3"/>
+          <ellipse cx="100" cy="160" rx="55" ry="70" fill="none" stroke="#8B6914" stroke-width="1" stroke-dasharray="4" opacity="0.3"/>
+          <circle cx="60" cy="25" r="20" fill="none" stroke="#8B6914" stroke-width="1" stroke-dasharray="4" opacity="0.3"/>
+          <circle cx="140" cy="25" r="20" fill="none" stroke="#8B6914" stroke-width="1" stroke-dasharray="4" opacity="0.3"/>
+        </svg>
+        <div class="interaction-progress" style="margin-top:12px;"><div class="interaction-progress-bar" id="bear-progress"></div></div>
+        <div style="margin-top:10px;font-size:14px;color:rgba(255,255,255,0.7);" id="bear-step-label">Schritt 1: Körper</div>
+      </div>
+      <button class="interaction-tap-btn" id="bear-btn" style="margin-top:12px;">Nächstes Teil platzieren 🧸</button>
+      <div style="margin-top:12px;display:none;text-align:center;" id="bear-name-wrap">
+        <label style="color:#fff;display:block;margin-bottom:6px;">Gib deinem Bären einen Namen:</label>
+        <input id="bear-name" placeholder="Name..." style="padding:8px 14px;border-radius:12px;border:2px solid #FFD700;font-size:16px;text-align:center;width:200px;" />
+      </div>
+      <button class="mg-complete-btn" id="mg-done-btn" onclick="Game.miniGameDone()">Weiter 💛</button>
+    `;
+    document.getElementById('bear-btn').addEventListener('click', onBearTap);
+  }
+
+  const bearSteps = [
+    { label: 'Körper', draw: (svg) => { addSVGEllipse(svg, 100, 160, 55, 70, '#B87A3D'); } },
+    { label: 'Kopf', draw: (svg) => { addSVGCircle(svg, 100, 60, 50, '#C8924A'); } },
+    { label: 'Linkes Ohr', draw: (svg) => { addSVGCircle(svg, 60, 25, 20, '#B87A3D'); addSVGCircle(svg, 60, 25, 12, '#D4A86A'); } },
+    { label: 'Rechtes Ohr', draw: (svg) => { addSVGCircle(svg, 140, 25, 20, '#B87A3D'); addSVGCircle(svg, 140, 25, 12, '#D4A86A'); } },
+    { label: 'Augen', draw: (svg) => { addSVGCircle(svg, 82, 55, 6, '#222'); addSVGCircle(svg, 118, 55, 6, '#222'); addSVGCircle(svg, 84, 53, 2, '#fff'); addSVGCircle(svg, 120, 53, 2, '#fff'); } },
+    { label: 'Nase', draw: (svg) => { addSVGEllipse(svg, 100, 72, 8, 5, '#8B5E3C'); } },
+    { label: 'Mund', draw: (svg) => { const p = document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d','M90 78 Q100 88 110 78'); p.setAttribute('fill','none'); p.setAttribute('stroke','#8B5E3C'); p.setAttribute('stroke-width','2'); svg.appendChild(p); } },
+    { label: 'Arme', draw: (svg) => { addSVGEllipse(svg, 42, 150, 18, 35, '#B87A3D'); addSVGEllipse(svg, 158, 150, 18, 35, '#B87A3D'); } },
+    { label: 'Beine', draw: (svg) => { addSVGEllipse(svg, 75, 240, 20, 28, '#B87A3D'); addSVGEllipse(svg, 125, 240, 20, 28, '#B87A3D'); } },
+    { label: 'Herz! ❤️', draw: (svg) => { const t = document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x','100'); t.setAttribute('y','165'); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','30'); t.textContent = '❤️'; svg.appendChild(t); } },
+  ];
+
+  function addSVGCircle(svg, cx, cy, r, fill) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r); c.setAttribute('fill', fill);
+    c.style.animation = 'fadeSlideUp 0.3s ease-out';
+    svg.appendChild(c);
+  }
+  function addSVGEllipse(svg, cx, cy, rx, ry, fill) {
+    const e = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+    e.setAttribute('cx', cx); e.setAttribute('cy', cy); e.setAttribute('rx', rx); e.setAttribute('ry', ry); e.setAttribute('fill', fill);
+    e.style.animation = 'fadeSlideUp 0.3s ease-out';
+    svg.appendChild(e);
+  }
+
+  function onBearTap() {
+    if (bearCurrentPart >= bearSteps.length) return;
+    const svg = document.getElementById('bear-svg');
+    const step = bearSteps[bearCurrentPart];
+    step.draw(svg);
+    bearCurrentPart++;
+    const progress = (bearCurrentPart / bearSteps.length) * 100;
+    document.getElementById('bear-progress').style.width = progress + '%';
+
+    if (bearCurrentPart < bearSteps.length) {
+      document.getElementById('bear-step-label').textContent = `Schritt ${bearCurrentPart + 1}: ${bearSteps[bearCurrentPart].label}`;
+    } else {
+      document.getElementById('bear-step-label').textContent = 'Fertig! Dein Bär ist perfekt! 🧸✨';
+      document.getElementById('bear-btn').style.display = 'none';
+      document.getElementById('bear-name-wrap').style.display = 'block';
+      setTimeout(() => document.getElementById('mg-done-btn').classList.add('show'), 500);
+    }
+  }
+
+  // ── LEGO ──
+  const legoHeart = [
+    [0,0,1,1,0,0,1,1,0,0],
+    [0,1,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1],
+    [0,1,1,1,1,1,1,1,1,0],
+    [0,0,1,1,1,1,1,1,0,0],
+    [0,0,0,1,1,1,1,0,0,0],
+    [0,0,0,0,1,1,0,0,0,0],
+  ];
+  let legoPlacedCount = 0;
+  let legoTotalPieces = 0;
+  let legoTargets = [];
+  let legoCurrentTarget = 0;
+  const legoColors = ['#E74C3C', '#C0392B', '#FF6B6B', '#D35400', '#E74C3C'];
+
+  function initLegoGame() {
+    legoPlacedCount = 0;
+    legoTargets = [];
+    legoCurrentTarget = 0;
+    const container = document.getElementById('minigame-content');
+    const rows = legoHeart.length;
+    const cols = legoHeart[0].length;
+
+    legoHeart.forEach((row, r) => {
+      row.forEach((cell, c) => {
+        if (cell === 1) legoTargets.push({ r, c });
+      });
+    });
+    legoTotalPieces = legoTargets.length;
+
+    const cellSize = Math.min(30, (window.innerWidth - 40) / cols);
+
+    let html = '<div class="mg-title">Baue ein Lego-Herz zusammen! 🧱❤️</div>';
+    html += `<div style="text-align:center;margin:8px 0;font-size:14px;color:rgba(255,255,255,0.7);" id="lego-counter">${legoPlacedCount} / ${legoTotalPieces} Steine</div>`;
+    html += '<div class="interaction-progress" style="margin:8px auto;max-width:260px;"><div class="interaction-progress-bar" id="lego-progress"></div></div>';
+    html += '<div style="text-align:center;margin-top:12px;">';
+    html += `<div class="lego-board" style="display:inline-grid;grid-template-columns:repeat(${cols}, ${cellSize}px);grid-template-rows:repeat(${rows}, ${cellSize}px);gap:2px;">`;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const isHeart = legoHeart[r][c] === 1;
+        html += `<div class="lego-cell${isHeart ? '' : ' lego-empty'}" id="lego-${r}-${c}" onclick="Game.placeLegoAt(${r},${c})" style="width:${cellSize}px;height:${cellSize}px;${isHeart ? '' : 'visibility:hidden;'}"></div>`;
+      }
+    }
+    html += '</div></div>';
+    html += '<button class="mg-complete-btn" id="mg-done-btn" onclick="Game.miniGameDone()">Weiter 💛</button>';
+    container.innerHTML = html;
+    highlightNextLego();
+  }
+
+  function highlightNextLego() {
+    document.querySelectorAll('.lego-cell.target').forEach(el => el.classList.remove('target'));
+    if (legoCurrentTarget < legoTargets.length) {
+      const t = legoTargets[legoCurrentTarget];
+      const cell = document.getElementById(`lego-${t.r}-${t.c}`);
+      cell.classList.add('target');
+      cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function placeLegoAt(r, c) {
+    if (legoCurrentTarget >= legoTargets.length) return;
+    const t = legoTargets[legoCurrentTarget];
+    if (r === t.r && c === t.c) {
+      const cell = document.getElementById(`lego-${r}-${c}`);
+      cell.classList.remove('target');
+      cell.classList.add('placed');
+      cell.style.background = legoColors[legoPlacedCount % legoColors.length];
+      cell.style.transform = 'scale(1.15)';
+      setTimeout(() => cell.style.transform = 'scale(1)', 150);
+      legoPlacedCount++;
+      legoCurrentTarget++;
+      document.getElementById('lego-counter').textContent = `${legoPlacedCount} / ${legoTotalPieces} Steine`;
+      document.getElementById('lego-progress').style.width = (legoPlacedCount / legoTotalPieces * 100) + '%';
+      if (legoPlacedCount >= legoTotalPieces) {
+        document.getElementById('lego-counter').textContent = 'Fertig! Ein Herz aus Lego! ❤️✨';
+        setTimeout(() => document.getElementById('mg-done-btn').classList.add('show'), 500);
+      } else {
+        highlightNextLego();
+      }
+    } else {
+      const cell = document.getElementById(`lego-${r}-${c}`);
+      if (cell && !cell.classList.contains('placed')) {
+        cell.style.animation = 'blankShake 0.3s';
+        setTimeout(() => cell.style.animation = '', 300);
+      }
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     POST ACTIVITY (Cinema / Planetarium)
+     ═══════════════════════════════════════════ */
+  function showCinemaScene() {
+    const container = document.getElementById('postactivity-content');
+    container.innerHTML = `
+      <div class="cinema-scene" style="width:100%;max-width:500px;position:relative;">
+        <div style="background:#0a0a12;border-radius:16px;padding:20px;box-shadow:0 0 40px rgba(0,0,80,0.3);">
+          <!-- Big screen -->
+          <div style="width:100%;height:140px;background:linear-gradient(135deg,#1a1a4e,#2a1a5e,#1a2a6e);border-radius:8px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 0 30px rgba(100,100,255,0.2);">
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:40px;opacity:0.3;">🎬</div>
+            <div style="position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(transparent,rgba(0,0,0,0.5));"></div>
+          </div>
+          <!-- Seat rows -->
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;justify-content:center;gap:4px;">
+              ${Array(9).fill(0).map(() => '<div style="width:20px;height:16px;background:#3a1515;border-radius:4px 4px 0 0;"></div>').join('')}
+            </div>
+            <div style="display:flex;justify-content:center;gap:4px;">
+              ${Array(11).fill(0).map(() => '<div style="width:20px;height:16px;background:#4a1a1a;border-radius:4px 4px 0 0;"></div>').join('')}
+            </div>
+            <div style="display:flex;justify-content:center;gap:4px;position:relative;">
+              ${Array(11).fill(0).map((_, i) => {
+                if (i === 4) return '<div style="width:20px;height:22px;background:#2a2a4a;border-radius:4px 4px 0 0;position:relative;"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:14px;height:14px;background:#d4956a;border-radius:50%;"></div></div>';
+                if (i === 5) return '<div style="width:20px;height:16px;background:#5a2020;border-radius:4px 4px 0 0;"><div style="text-align:center;font-size:10px;margin-top:-2px;">🍿</div></div>';
+                if (i === 6) return '<div style="width:20px;height:22px;background:#2a2a4a;border-radius:4px 4px 0 0;position:relative;"><div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:14px;height:14px;background:#d4956a;border-radius:50%;"></div><div style="position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:16px;height:8px;background:#2a1a0a;border-radius:8px 8px 2px 2px;"></div></div>';
+                return '<div style="width:20px;height:16px;background:#4a1a1a;border-radius:4px 4px 0 0;"></div>';
+              }).join('')}
+            </div>
+            <div style="display:flex;justify-content:center;gap:4px;">
+              ${Array(9).fill(0).map(() => '<div style="width:20px;height:16px;background:#5a2020;border-radius:4px 4px 0 0;"></div>').join('')}
+            </div>
+          </div>
+        </div>
+        <div style="color:#fff;text-align:center;margin-top:16px;font-size:16px;text-shadow:0 2px 8px rgba(0,0,0,0.5);">Ein schöner Film zusammen... 🎬</div>
+        <button class="cinema-continue" onclick="Game.postActivityDone()" style="margin-top:16px;">Weiter 💛</button>
+      </div>
+    `;
+  }
+
+  function showPlanetariumScene() {
+    state.starsPlaced = 0;
+    const container = document.getElementById('postactivity-content');
+    container.innerHTML = `
+      <div class="planetarium-scene" id="planetarium">
+        <canvas id="star-canvas"></canvas>
+        <div class="planetarium-hint" id="planet-hint">Tippe um Sterne zu platzieren ✨</div>
+        <div class="planetarium-counter" id="planet-counter">0 / 15 Sterne</div>
+        <button class="planetarium-btn" id="planet-btn" onclick="Game.postActivityDone()">Weiter 💛</button>
+      </div>
+    `;
+    setupStarCanvas();
+  }
+
+  function setupStarCanvas() {
+    const cvs = document.getElementById('star-canvas');
+    if (!cvs) return;
+    const ctx = cvs.getContext('2d');
+    cvs.width = window.innerWidth;
+    cvs.height = window.innerHeight;
+
+    // Draw initial starfield
+    ctx.fillStyle = '#000010';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+    for (let i = 0; i < 100; i++) {
+      const x = Math.random() * cvs.width;
+      const y = Math.random() * cvs.height;
+      const r = Math.random() * 1;
+      ctx.fillStyle = `rgba(255,255,255,${0.1 + Math.random() * 0.3})`;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const stars = [];
+
+    cvs.addEventListener('click', e => {
+      if (state.starsPlaced >= 15) return;
+      const rect = cvs.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      stars.push({ x, y });
+      state.starsPlaced++;
+
+      // Draw star burst
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, 15);
+      gradient.addColorStop(0, 'rgba(255,255,200,1)');
+      gradient.addColorStop(0.3, 'rgba(255,200,100,0.6)');
+      gradient.addColorStop(1, 'rgba(255,200,100,0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, y, 15, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      document.getElementById('planet-counter').textContent = `${state.starsPlaced} / 15 Sterne`;
+
+      if (state.starsPlaced >= 15) {
+        document.getElementById('planet-hint').style.opacity = '0';
+        // Draw constellation lines (connect some stars)
+        setTimeout(() => {
+          ctx.strokeStyle = 'rgba(255,200,100,0.4)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (let i = 0; i < stars.length - 1; i++) {
+            if (Math.random() > 0.4) {
+              ctx.moveTo(stars[i].x, stars[i].y);
+              ctx.lineTo(stars[i + 1].x, stars[i + 1].y);
+            }
+          }
+          ctx.stroke();
+          document.getElementById('planet-btn').classList.add('show');
+        }, 500);
+      }
+    });
+
+    cvs.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      cvs.dispatchEvent(new MouseEvent('click', { clientX: touch.clientX, clientY: touch.clientY }));
+    }, { passive: false });
+  }
+
+  /* ═══════════════════════════════════════════
+     CAR DRIVE SETUP
+     ═══════════════════════════════════════════ */
+  function setupDriveBuildings() { /* now 3D */ }
+  function setupDriveStars() { /* now 3D */ }
+
+  /* ═══════════════════════════════════════════
+     MEETING HEARTS
+     ═══════════════════════════════════════════ */
+  function spawnMeetingHearts() {
+    const container = document.getElementById('meeting-hearts');
+    container.innerHTML = '';
+    for (let i = 0; i < 12; i++) {
+      const h = document.createElement('div');
+      h.className = 'float-heart';
+      h.textContent = ['💛', '🧡', '❤️'][i % 3];
+      h.style.cssText = `left:${10 + Math.random() * 80}%;bottom:${Math.random() * 30}%;animation-delay:${Math.random() * 2}s;font-size:${14 + Math.random() * 16}px;`;
+      container.appendChild(h);
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     FINALE
+     ═══════════════════════════════════════════ */
+  function spawnFinaleHearts() {
+    const container = document.getElementById('finale-hearts');
+    container.innerHTML = '';
+    for (let i = 0; i < 30; i++) {
+      const h = document.createElement('div');
+      h.className = 'rain-heart';
+      h.textContent = ['💛', '🧡', '❤️', '💕'][i % 4];
+      h.style.cssText = `left:${Math.random() * 100}%;animation-duration:${3 + Math.random() * 4}s;animation-delay:${Math.random() * 3}s;font-size:${12 + Math.random() * 18}px;`;
+      container.appendChild(h);
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     SCENE MANAGER
+     ═══════════════════════════════════════════ */
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+
+  async function switchScene(to) {
+    const fade = document.getElementById('fade');
+    fade.classList.add('active');
+    await delay(800);
+
+    // Hide all scene overlays
+    document.querySelectorAll('.scene').forEach(s => {
+      s.style.display = 'none';
+      s.classList.remove('active');
+    });
+    // Force-hide keramik paint overlay and reset showcase
+    const kStep3 = document.getElementById('keramik-step3');
+    if (kStep3) kStep3.style.display = 'none';
+    keramikShowcase = false;
+    hideControls();
+    canvas.style.display = 'none';
+    document.getElementById('window-msg').style.display = 'none';
+    document.getElementById('window-btn').style.display = 'none';
+
+    // Clear window timeouts and reset state
+    if (typeof windowTimeouts !== 'undefined') windowTimeouts.forEach(t => clearTimeout(t));
+    cameraAnimating = false;
+    cameraTarget = null;
+    carRideActive = false;
+    state.windowViewing = false;
+    // Stop video and music if playing
+    const driveMusic1 = document.getElementById('drive-music-1');
+    if (driveMusic1) { driveMusic1.pause(); }
+    const driveMusic2 = document.getElementById('drive-music-2');
+    if (driveMusic2) { driveMusic2.pause(); }
+    const driveMusic3 = document.getElementById('drive-music-3');
+    if (driveMusic3) { driveMusic3.pause(); }
+
+    state.currentScene = to;
+
+    // Enter scene
+    switch (to) {
+      case 'wakeup':
+        showOverlay('scene-wakeup');
+        runWakeupSequence();
+        break;
+
+      case 'phone':
+        showOverlay('scene-phone');
+        break;
+
+      case 'room':
+        canvas.style.display = 'block';
+        buildRoom();
+        showControls();
+        updateMissions();
+        document.getElementById('mission-tracker').style.display = '';
+        break;
+
+      case 'staircase':
+        canvas.style.display = 'block';
+        buildStaircase();
+        showControls();
+        break;
+
+      case 'meeting':
+        canvas.style.display = 'block';
+        buildMeetingScene();
+        // Show meeting text overlay after a moment
+        setTimeout(() => {
+          showOverlay('scene-meeting');
+          spawnMeetingHearts();
+        }, 500);
+        break;
+
+      case 'cardrive':
+        canvas.style.display = 'block';
+        buildCarRide(false);
+        {
+          document.getElementById('drive-text').textContent = 'Surprise Date!';
+          showOverlay('scene-cardrive');
+          const music = document.getElementById('drive-music-1');
+          music.volume = 0.3;
+          music.currentTime = 0;
+          music.play().catch(() => {});
+        }
+        setTimeout(() => { carRideActive = false; switchScene('minigame'); }, 10000);
+        break;
+
+      case 'minigame':
+        canvas.style.display = 'block';
+        buildKeramik3D();
+        showOverlay('scene-minigame');
+        break;
+
+      case 'drivecinema':
+        canvas.style.display = 'block';
+        buildCarRide(false);
+        {
+          document.getElementById('drive-text').textContent = 'Ab ins Kino!';
+          showOverlay('scene-cardrive');
+          const music = document.getElementById('drive-music-2');
+          music.volume = 0.3;
+          music.currentTime = 0;
+          music.play().catch(() => {});
+        }
+        setTimeout(() => { carRideActive = false; switchScene('cinema3d'); }, 10000);
+        break;
+
+      case 'cinema3d':
+        canvas.style.display = 'block';
+        buildCinema3D();
+        showOverlay('scene-cinema3d');
+        break;
+
+      case 'drivehome':
+        canvas.style.display = 'block';
+        buildCarRide(true);
+        {
+          const dhText = document.getElementById('drive-text');
+          dhText.textContent = 'Auf dem Weg nach Hause... 🌙';
+          dhText.style.animation = 'none';
+          dhText.offsetHeight;
+          dhText.style.animation = '';
+          showOverlay('scene-cardrive');
+          const music3 = document.getElementById('drive-music-3');
+          music3.volume = 0.15;
+          music3.currentTime = 0;
+          music3.play().catch(() => {});
+        }
+        setTimeout(() => { carRideActive = false; switchScene('goodbye'); }, 10000);
+        break;
+
+      case 'goodbye':
+        showOverlay('scene-goodbye');
+        {
+          const stars = document.getElementById('gb-stars');
+          stars.innerHTML = '';
+          for (let i = 0; i < 40; i++) {
+            const s = document.createElement('span');
+            s.style.left = Math.random() * 100 + '%';
+            s.style.top = Math.random() * 60 + '%';
+            s.style.animationDelay = (Math.random() * 3) + 's';
+            s.style.width = s.style.height = (1 + Math.random() * 3) + 'px';
+            stars.appendChild(s);
+          }
+        }
+        break;
+
+      case 'finale':
+        showOverlay('scene-finale');
+        spawnFinaleHearts();
+        break;
+    }
+
+    await delay(100);
+    fade.classList.remove('active');
+  }
+
+  function showOverlay(id) {
+    const el = document.getElementById(id);
+    el.style.display = 'flex';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.classList.add('active');
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     WAKEUP SEQUENCE
+     ═══════════════════════════════════════════ */
+  async function runWakeupSequence() {
+    await delay(1500);
+    document.getElementById('wakeup-cat').classList.add('jump');
+    await delay(800);
+    document.getElementById('wakeup-bed').classList.add('bed-shake');
+    await delay(600);
+    document.getElementById('zzz-text').style.display = 'none';
+    document.getElementById('mali-eye-l').classList.add('open');
+    document.getElementById('mali-eye-r').classList.add('open');
+    await delay(500);
+    document.getElementById('wakeup-text').classList.add('show');
+    await delay(2000);
+    switchScene('phone');
+  }
+
+  /* ═══════════════════════════════════════════
+     PUBLIC API (Game object)
+     ═══════════════════════════════════════════ */
+  window.Game = {
+    switchScene,
+
+    closePhone() {
+      switchScene('room');
+    },
+
+    goToStaircase() {
+      switchScene('staircase');
+    },
+
+    goodbyeKiss() {
+      const figs = document.getElementById('gb-figures');
+      figs.classList.add('gb-kissing');
+      document.getElementById('gb-continue').style.display = 'none';
+      // Floating hearts
+      const container = document.querySelector('.goodbye-scene');
+      for (let i = 0; i < 12; i++) {
+        const h = document.createElement('div');
+        h.textContent = ['💛','💋','✨','💛','❤️','💛'][i % 6];
+        h.style.cssText = `position:absolute;font-size:${18+Math.random()*18}px;left:${20+Math.random()*60}%;top:40%;opacity:0;z-index:10;pointer-events:none;animation:gbFloatHeart 2s ${i*0.15}s ease-out forwards;`;
+        container.appendChild(h);
+      }
+      setTimeout(() => switchScene('finale'), 2500);
+    },
+
+    placeLegoAt,
+    keramikChooseShape(shape) {
+      keramikShapeType = shape;
+      keramikMorphToShape(shape);
+      document.getElementById('keramik-step1').style.display = 'none';
+      document.getElementById('keramik-step2').style.display = '';
+      keramikSpinSpeed = 0;
+      keramikSpinProgress = 0;
+      document.getElementById('keramik-spin-fill').style.width = '0%';
+      const spinZone = document.getElementById('keramik-step2');
+      let taps = 0;
+      const maxTaps = 15;
+      const tapHandler = (e) => {
+        e.preventDefault();
+        taps++;
+        keramikSpinSpeed = 0.25;
+        keramikSpinProgress = Math.min(100, (taps / maxTaps) * 100);
+        document.getElementById('keramik-spin-fill').style.width = keramikSpinProgress + '%';
+        if (keramikSpinProgress >= 100) {
+          spinZone.removeEventListener('click', tapHandler);
+          spinZone.removeEventListener('touchstart', tapHandler);
+          setTimeout(() => {
+            document.getElementById('keramik-step2').style.display = 'none';
+            document.getElementById('keramik-step3').style.display = 'flex';
+            keramikInitPaintCanvas();
+          }, 800);
+        }
+      };
+      spinZone.addEventListener('click', tapHandler);
+      spinZone.addEventListener('touchstart', tapHandler, { passive: false });
+    },
+
+    keramikDone() {
+      const cvs = document.getElementById('keramik-paint-canvas');
+      if (cvs && keramikPottery) {
+        const tex = new THREE.CanvasTexture(cvs);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        keramikPottery.traverse(child => {
+          if (child.isMesh) {
+            child.material = new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide });
+          }
+        });
+      }
+      document.getElementById('keramik-step3').style.display = 'none';
+
+      // Enter showcase mode: lift pottery, let user rotate with drag
+      keramikShowcase = true;
+      keramikDragRotation = 0;
+      keramikLiftY = 0;
+      keramikTargetLiftY = 0.6;
+
+      // Move camera closer and center on pottery
+      camera.position.set(0, 0.6, 1.2);
+      camera.rotation.set(-0.15, 0, 0);
+
+      // Hide wheel
+      if (keramikWheelMesh) keramikWheelMesh.visible = false;
+      if (keramikWheelDisc) keramikWheelDisc.visible = false;
+
+      // Replace overlay with a drag zone + button at bottom
+      document.getElementById('keramik-overlay').innerHTML = `
+        <div id="keramik-dragzone" style="position:fixed;top:0;left:0;right:0;bottom:80px;z-index:25;touch-action:none;cursor:grab;"></div>
+        <div style="position:fixed;bottom:0;left:0;right:0;z-index:30;text-align:center;padding:12px;background:linear-gradient(transparent,rgba(0,0,0,0.6));">
+          <div style="color:#fff;font-size:20px;margin-bottom:4px;">Dein Kunstwerk!</div>
+          <div style="color:#fff;font-size:14px;opacity:0.7;margin-bottom:4px;">Wisch um zu drehen</div>
+          <div style="color:#fff;font-size:15px;margin-bottom:10px;">Mach ein Screenshot!</div>
+          <button onclick="Game.miniGameDone()" style="padding:14px 30px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6b6b,#ffa500);color:#fff;font-size:16px;">Ab ins Kino!</button>
+        </div>
+      `;
+
+      const dz = document.getElementById('keramik-dragzone');
+      dz.addEventListener('mousedown', (e) => {
+        keramikDragging = true;
+        keramikLastX = e.clientX;
+        keramikLastY = e.clientY;
+      });
+      dz.addEventListener('mousemove', (e) => {
+        if (!keramikDragging) return;
+        keramikDragRotation += (e.clientX - keramikLastX) * 0.015;
+        keramikDragTilt += (e.clientY - keramikLastY) * 0.01;
+        keramikDragTilt = Math.max(-1.2, Math.min(1.2, keramikDragTilt));
+        keramikLastX = e.clientX;
+        keramikLastY = e.clientY;
+      });
+      dz.addEventListener('mouseup', () => { keramikDragging = false; });
+      dz.addEventListener('mouseleave', () => { keramikDragging = false; });
+      dz.addEventListener('touchstart', (e) => {
+        keramikDragging = true;
+        keramikLastX = e.touches[0].clientX;
+        keramikLastY = e.touches[0].clientY;
+      }, { passive: true });
+      dz.addEventListener('touchmove', (e) => {
+        if (!keramikDragging) return;
+        keramikDragRotation += (e.touches[0].clientX - keramikLastX) * 0.015;
+        keramikDragTilt += (e.touches[0].clientY - keramikLastY) * 0.01;
+        keramikDragTilt = Math.max(-1.2, Math.min(1.2, keramikDragTilt));
+        keramikLastX = e.touches[0].clientX;
+        keramikLastY = e.touches[0].clientY;
+      }, { passive: true });
+      dz.addEventListener('touchend', () => { keramikDragging = false; });
+    },
+
+    miniGameDone() {
+      switchScene('drivecinema');
+    },
+
+    postActivityDone() {
+      switchScene('drivehome');
+    },
+
+    cinemaDone() {
+      switchScene('drivehome');
+    },
+  };
+
+  /* ═══════════════════════════════════════════
+     INIT
+     ═══════════════════════════════════════════ */
+  function init() {
+    initEngine();
+    setupControls();
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

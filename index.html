@@ -1580,6 +1580,73 @@
       100% { opacity: 0; transform: scale(0.5) translateY(-60px); }
     }
     .makeup-layer { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+
+    /* ── Makeup 3D Cutscene Dialogue ── */
+    .makeup-3d-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 100;
+      pointer-events: none;
+      display: none;
+    }
+    .makeup-3d-overlay.active {
+      display: block;
+    }
+    .makeup-3d-dialogue {
+      position: absolute;
+      bottom: max(80px, calc(60px + env(safe-area-inset-bottom)));
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.78);
+      border: 2px solid rgba(255,255,255,0.15);
+      border-radius: 18px;
+      padding: 18px 26px 14px;
+      color: #fff;
+      font-size: 15px;
+      max-width: 340px;
+      width: 85%;
+      text-align: center;
+      pointer-events: auto;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .makeup-3d-dialogue.show {
+      opacity: 1;
+    }
+    .makeup-3d-dialogue .speaker {
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .makeup-3d-dialogue .speaker.sister {
+      color: #8899CC;
+    }
+    .makeup-3d-dialogue .speaker.mali {
+      color: #FF8FAA;
+    }
+    .makeup-3d-dialogue .dialogue-text {
+      line-height: 1.5;
+      font-style: italic;
+    }
+    .makeup-3d-continue {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 8px 24px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 22px;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      pointer-events: auto;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .makeup-3d-continue:active {
+      background: rgba(255,255,255,0.25);
+    }
   </style>
 </head>
 <body>
@@ -1784,6 +1851,15 @@
   </div>
 </div>
 
+<!-- ═══ MAKEUP 3D CUTSCENE OVERLAY ═══ -->
+<div class="makeup-3d-overlay" id="makeup-3d-overlay">
+  <div class="makeup-3d-dialogue" id="makeup-3d-dialogue">
+    <div class="speaker" id="makeup-3d-speaker"></div>
+    <div class="dialogue-text" id="makeup-3d-text"></div>
+    <button class="makeup-3d-continue" id="makeup-3d-continue">Weiter</button>
+  </div>
+</div>
+
 <!-- ═══ SCENE 7: MEETING ═══ -->
 <div id="scene-meeting" class="scene" style="background:transparent !important;justify-content:flex-end;">
   <div class="meeting-hearts" id="meeting-hearts"></div>
@@ -1823,11 +1899,11 @@
         </div>
       </div>
       <!-- Step 3: Paint -->
-      <div id="keramik-step3" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:50;flex-direction:column;align-items:center;justify-content:center;padding:12px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <div style="color:#fff;font-size:20px;margin-bottom:10px;text-shadow:0 2px 6px rgba(0,0,0,0.6);">Bemale dein Werk! 🎨</div>
-        <div id="keramik-paint-colors" style="display:flex;justify-content:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;"></div>
-        <canvas id="keramik-paint-canvas" width="600" height="450" style="border-radius:12px;background:#f5e6d3;width:95vw;max-width:600px;height:auto;touch-action:none;cursor:crosshair;box-shadow:0 4px 20px rgba(0,0,0,0.4);"></canvas>
-        <button onclick="Game.keramikDone()" style="margin-top:12px;padding:14px 36px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6b6b,#ffa500);color:#fff;font-size:16px;">Fertig! 🎨</button>
+      <div id="keramik-step3" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:50;flex-direction:column;align-items:center;justify-content:center;padding:10px;overflow:hidden;">
+        <div style="color:#fff;font-size:17px;margin-bottom:6px;text-shadow:0 2px 6px rgba(0,0,0,0.6);flex-shrink:0;">Bemale dein Werk! 🎨</div>
+        <div id="keramik-paint-colors" style="display:flex;justify-content:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;flex-shrink:0;"></div>
+        <canvas id="keramik-paint-canvas" width="600" height="450" style="border-radius:12px;background:#f5e6d3;width:85vw;max-width:500px;max-height:45vh;touch-action:none;cursor:crosshair;box-shadow:0 4px 20px rgba(0,0,0,0.4);object-fit:contain;flex-shrink:1;"></canvas>
+        <button onclick="Game.keramikDone()" style="margin-top:10px;padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6b6b,#ffa500);color:#fff;font-size:16px;flex-shrink:0;">Fertig! 🎨</button>
       </div>
     </div>
   </div>
@@ -2675,22 +2751,42 @@
     wrap.rotation.x = Math.PI;
     bouquet.add(wrap);
     omer.add(bouquet);
-    // Right arm at side holding RedBull
+    // Right arm at side holding can
     addBox(0.28, 0.9, 0, 0.11, 0.5, 0.11, 0x222233, { parent: omer });
-    const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 6), skinMat);
-    rHand.position.set(0.28, 0.6, 0.05);
+    const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), skinMat);
+    rHand.position.set(0.28, 0.58, 0.08);
     omer.add(rHand);
-    // RedBull can
-    const rbCan = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.11, 8), new THREE.MeshLambertMaterial({ color: 0x1E3A6E }));
-    rbCan.position.set(0.28, 0.58, 0.05);
-    omer.add(rbCan);
-    const rbTop = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.02, 8), new THREE.MeshLambertMaterial({ color: 0xCCCCCC }));
-    rbTop.position.set(0.28, 0.64, 0.05);
-    omer.add(rbTop);
-    // Red/silver label
-    const rbLabel = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.027, 0.04, 8), new THREE.MeshLambertMaterial({ color: 0xCC0000 }));
-    rbLabel.position.set(0.28, 0.56, 0.05);
-    omer.add(rbLabel);
+    // Can (bigger, with image texture)
+    const canRadius = 0.055;
+    const canHeight = 0.22;
+    const canGeo = new THREE.CylinderGeometry(canRadius, canRadius, canHeight, 24);
+    const canFallbackMat = new THREE.MeshLambertMaterial({ color: 0x1E3A6E });
+    const canMesh = new THREE.Mesh(canGeo, canFallbackMat);
+    canMesh.position.set(0.28, 0.52, 0.08);
+    omer.add(canMesh);
+    // Top lid
+    const canTop = new THREE.Mesh(
+      new THREE.CylinderGeometry(canRadius * 0.95, canRadius * 0.95, 0.025, 24),
+      new THREE.MeshLambertMaterial({ color: 0xCCCCCC })
+    );
+    canTop.position.set(0.28, 0.52 + canHeight / 2 + 0.012, 0.08);
+    omer.add(canTop);
+    // Bottom
+    const canBot = new THREE.Mesh(
+      new THREE.CylinderGeometry(canRadius * 0.9, canRadius * 0.9, 0.015, 24),
+      new THREE.MeshLambertMaterial({ color: 0xBBBBBB })
+    );
+    canBot.position.set(0.28, 0.52 - canHeight / 2 - 0.007, 0.08);
+    omer.add(canBot);
+    // Load image onto can (place dose.png or dose.jpg in images/)
+    const canTexLoader = new THREE.TextureLoader();
+    canTexLoader.load('images/dose.png', (tex) => {
+      canMesh.material = new THREE.MeshBasicMaterial({ map: tex });
+    }, undefined, () => {
+      canTexLoader.load('images/dose.jpg', (tex2) => {
+        canMesh.material = new THREE.MeshBasicMaterial({ map: tex2 });
+      }, undefined, () => {});
+    });
 
     scene3d.add(omer);
 
@@ -3495,28 +3591,292 @@
     document.getElementById('overlay-cat').classList.add('active');
   }
 
-  const makeupSteps = [
-    { id: 'mk-foundation', label: 'Foundation auftragen ✨', progress: 25 },
-    { id: 'mk-eyeshadow', label: 'Lidschatten auftragen 💜', progress: 50 },
-    { id: 'mk-lipstick', label: 'Lippenstift auftragen 💋', progress: 75 },
-    { id: 'mk-blush', label: 'Rouge auftragen 🌸', progress: 100 },
-  ];
-  let makeupStep = 0;
+  /* ═══════════════════════════════════════════
+     MAKEUP 3D CUTSCENE
+     ═══════════════════════════════════════════ */
+  let makeupCutsceneActive = false;
+  let maliCutsceneGroup = null;
+  let sisterCutsceneGroup = null;
+  let savedCamPos = null;
+  let savedCamYaw = 0;
+  let savedCamPitch = 0;
+  let makeupArmInterval = null;
+
+  function smoothstep(t) { return t * t * (3 - 2 * t); }
+
+  function animateLerp(from, to, duration, onUpdate, onDone) {
+    const start = performance.now();
+    function tick() {
+      const elapsed = performance.now() - start;
+      let t = Math.min(elapsed / duration, 1);
+      const e = smoothstep(t);
+      onUpdate(e);
+      if (t < 1) requestAnimationFrame(tick);
+      else if (onDone) onDone();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function buildMaliAtVanity() {
+    maliCutsceneGroup = new THREE.Group();
+    maliCutsceneGroup.userData.cutscene = true;
+    maliCutsceneGroup.position.set(3.05, 0, -2.5);
+    maliCutsceneGroup.rotation.y = Math.PI / 2;
+
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xd4956a });
+    const hairMat = new THREE.MeshLambertMaterial({ color: 0x1a0a0a });
+    const dressMat = new THREE.MeshLambertMaterial({ color: 0xcc6688 });
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+
+    addBox(-0.08, 0.25, 0.05, 0.12, 0.45, 0.12, 0x1a1a2e, { parent: maliCutsceneGroup });
+    addBox(0.08, 0.25, 0.05, 0.12, 0.45, 0.12, 0x1a1a2e, { parent: maliCutsceneGroup });
+    const shoes1 = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.06, 0.16), new THREE.MeshLambertMaterial({ color: 0x333333 }));
+    shoes1.position.set(-0.08, 0.03, 0.1); maliCutsceneGroup.add(shoes1);
+    const shoes2 = shoes1.clone(); shoes2.position.set(0.08, 0.03, 0.1); maliCutsceneGroup.add(shoes2);
+
+    addBox(0, 0.7, 0, 0.36, 0.55, 0.22, 0xcc6688, { parent: maliCutsceneGroup });
+    const mHead = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 14), skinMat);
+    mHead.position.set(0, 1.15, 0); maliCutsceneGroup.add(mHead);
+    const mHair = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), hairMat
+    );
+    mHair.position.set(0, 1.2, -0.02); maliCutsceneGroup.add(mHair);
+    addBox(0, 0.85, -0.12, 0.3, 0.55, 0.08, 0x1a0a0a, { parent: maliCutsceneGroup });
+
+    const meL = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6), eyeMat);
+    meL.position.set(-0.05, 1.17, 0.14); maliCutsceneGroup.add(meL);
+    const meR = meL.clone(); meR.position.set(0.05, 1.17, 0.14); maliCutsceneGroup.add(meR);
+
+    const smileMat = new THREE.MeshBasicMaterial({ color: 0xCC5566 });
+    const smile = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.015, 0.02), smileMat);
+    smile.position.set(0, 1.07, 0.15); maliCutsceneGroup.add(smile);
+
+    addBox(-0.26, 0.72, 0, 0.1, 0.38, 0.1, 0xcc6688, { parent: maliCutsceneGroup });
+    const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), skinMat);
+    lHand.position.set(-0.26, 0.5, 0); maliCutsceneGroup.add(lHand);
+
+    addBox(0.2, 0.88, 0.12, 0.09, 0.32, 0.09, 0xcc6688, { parent: maliCutsceneGroup });
+    const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), skinMat);
+    rHand.position.set(0.2, 1.06, 0.14); rHand.name = 'mali-rhand';
+    maliCutsceneGroup.add(rHand);
+    const lipstickHeld = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.015, 0.015, 0.09, 6),
+      new THREE.MeshLambertMaterial({ color: 0xCC3366 })
+    );
+    lipstickHeld.position.set(0.2, 1.11, 0.16); lipstickHeld.name = 'mali-lipstick';
+    maliCutsceneGroup.add(lipstickHeld);
+
+    scene3d.add(maliCutsceneGroup);
+  }
+
+  function buildSister() {
+    sisterCutsceneGroup = new THREE.Group();
+    sisterCutsceneGroup.userData.cutscene = true;
+    sisterCutsceneGroup.position.set(-1.0, 0, 3.0);
+    sisterCutsceneGroup.rotation.y = -Math.PI * 0.15;
+    sisterCutsceneGroup.visible = false;
+
+    const skinMat = new THREE.MeshLambertMaterial({ color: 0xd4956a });
+    const hairMat = new THREE.MeshLambertMaterial({ color: 0xE8C868 });
+    const topMat  = new THREE.MeshLambertMaterial({ color: 0x5566AA });
+    const eyeMat  = new THREE.MeshBasicMaterial({ color: 0x222222 });
+
+    addBox(-0.08, 0.32, 0, 0.13, 0.58, 0.13, 0x2a2a3e, { parent: sisterCutsceneGroup });
+    addBox(0.08, 0.32, 0, 0.13, 0.58, 0.13, 0x2a2a3e, { parent: sisterCutsceneGroup });
+    const ss1 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.07, 0.18), new THREE.MeshLambertMaterial({ color: 0x444444 }));
+    ss1.position.set(-0.08, 0.04, 0.05); sisterCutsceneGroup.add(ss1);
+    const ss2 = ss1.clone(); ss2.position.set(0.08, 0.04, 0.05); sisterCutsceneGroup.add(ss2);
+
+    addBox(0, 0.9, 0, 0.38, 0.62, 0.24, 0x5566AA, { parent: sisterCutsceneGroup });
+    const sHead = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 14), skinMat);
+    sHead.position.set(0, 1.42, 0); sisterCutsceneGroup.add(sHead);
+    const sHair = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), hairMat
+    );
+    sHair.position.set(0, 1.48, -0.02); sisterCutsceneGroup.add(sHair);
+    addBox(0, 1.1, -0.12, 0.3, 0.55, 0.08, 0xE8C868, { parent: sisterCutsceneGroup });
+
+    const seL = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6), eyeMat);
+    seL.position.set(-0.05, 1.44, 0.14); sisterCutsceneGroup.add(seL);
+    const seR = seL.clone(); seR.position.set(0.05, 1.44, 0.14); sisterCutsceneGroup.add(seR);
+
+    const frownMat = new THREE.MeshBasicMaterial({ color: 0x995555 });
+    const frown = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.015, 0.02), frownMat);
+    frown.position.set(0, 1.34, 0.15); sisterCutsceneGroup.add(frown);
+
+    addBox(-0.27, 0.88, 0.06, 0.1, 0.4, 0.1, 0x5566AA, { parent: sisterCutsceneGroup });
+    addBox(0.27, 0.88, 0.06, 0.1, 0.4, 0.1, 0x5566AA, { parent: sisterCutsceneGroup });
+    const sh1 = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), skinMat);
+    sh1.position.set(-0.27, 0.65, 0.06); sisterCutsceneGroup.add(sh1);
+    const sh2 = sh1.clone(); sh2.position.set(0.27, 0.65, 0.06); sisterCutsceneGroup.add(sh2);
+
+    scene3d.add(sisterCutsceneGroup);
+  }
+
+  function showMakeupDialogue(speakerName, speakerClass, text, callback) {
+    const overlay = document.getElementById('makeup-3d-overlay');
+    const dialogue = document.getElementById('makeup-3d-dialogue');
+    const speaker = document.getElementById('makeup-3d-speaker');
+    const textEl = document.getElementById('makeup-3d-text');
+    const btn = document.getElementById('makeup-3d-continue');
+
+    overlay.classList.add('active');
+    speaker.textContent = speakerName;
+    speaker.className = 'speaker ' + speakerClass;
+    textEl.textContent = text;
+    setTimeout(() => dialogue.classList.add('show'), 50);
+
+    btn.onclick = () => {
+      dialogue.classList.remove('show');
+      setTimeout(() => {
+        overlay.classList.remove('active');
+        if (callback) callback();
+      }, 400);
+    };
+  }
 
   function startMakeup() {
     hideControls();
-    state.makeupProgress = 0;
-    makeupStep = 0;
-    document.getElementById('makeup-progress').style.width = '0%';
-    document.getElementById('makeup-label').textContent = makeupSteps[0].label;
-    document.getElementById('makeup-sparkles').innerHTML = '';
-    document.getElementById('makeup-tap-btn').textContent = 'Auftragen 💄';
-    document.getElementById('makeup-tap-btn').style.pointerEvents = '';
-    makeupSteps.forEach(s => {
-      const el = document.getElementById(s.id);
-      if (el) el.style.display = 'none';
+    makeupCutsceneActive = true;
+
+    savedCamPos = camera.position.clone();
+    savedCamYaw = yaw;
+    savedCamPitch = pitch;
+
+    buildMaliAtVanity();
+    buildSister();
+
+    const camStart = camera.position.clone();
+    const camEnd = new THREE.Vector3(-0.3, 1.6, -1.8);
+    const yawStart = yaw;
+    const yawEnd = -Math.PI / 2;
+    const pitchStart = pitch;
+    const pitchEnd = -0.08;
+
+    cameraAnimating = true;
+    animateLerp(0, 1, 1200,
+      (e) => {
+        camera.position.lerpVectors(camStart, camEnd, e);
+        yaw = yawStart + (yawEnd - yawStart) * e;
+        pitch = pitchStart + (pitchEnd - pitchStart) * e;
+      },
+      () => {
+        cameraAnimating = false;
+        runMakeupCutscene();
+      }
+    );
+  }
+
+  function runMakeupCutscene() {
+    let armTime = 0;
+    makeupArmInterval = setInterval(() => {
+      armTime += 0.08;
+      if (!maliCutsceneGroup) return;
+      maliCutsceneGroup.children.forEach(c => {
+        if (c.name === 'mali-rhand') c.position.y = 1.06 + Math.sin(armTime * 2.5) * 0.03;
+        if (c.name === 'mali-lipstick') c.position.y = 1.11 + Math.sin(armTime * 2.5) * 0.03;
+      });
+    }, 16);
+
+    setTimeout(() => {
+      sisterCutsceneGroup.visible = true;
+      const walkStart = sisterCutsceneGroup.position.clone();
+      const walkEnd = new THREE.Vector3(1.8, 0, -1.2);
+
+      animateLerp(0, 1, 2000,
+        (e) => {
+          sisterCutsceneGroup.position.lerpVectors(walkStart, walkEnd, e);
+          sisterCutsceneGroup.position.y = Math.abs(Math.sin(e * Math.PI * 5)) * 0.025;
+          sisterCutsceneGroup.rotation.y = -Math.PI * 0.15 + (-Math.PI * 0.35) * e;
+        },
+        () => {
+          // Hadischa dreht sich zu Mali (Vanity ist bei x=3.05)
+          const dx = 3.05 - sisterCutsceneGroup.position.x;
+          const dz = -2.5 - sisterCutsceneGroup.position.z;
+          sisterCutsceneGroup.rotation.y = Math.atan2(dx, dz);
+          if (makeupArmInterval) { clearInterval(makeupArmInterval); makeupArmInterval = null; }
+
+          showMakeupDialogue(
+            'Hadischa 😂', 'sister',
+            'HAHAHHAAHHGA',
+            () => { sisterWalksAway(); }
+          );
+        }
+      );
+    }, 2000);
+  }
+
+  function killAllCutsceneModels() {
+    if (makeupArmInterval) { clearInterval(makeupArmInterval); makeupArmInterval = null; }
+
+    const toRemove = [];
+    scene3d.children.forEach(child => {
+      if (child.userData && child.userData.cutscene) toRemove.push(child);
     });
-    document.getElementById('overlay-makeup').classList.add('active');
+    toRemove.forEach(obj => {
+      obj.visible = false;
+      scene3d.remove(obj);
+    });
+
+    if (maliCutsceneGroup) {
+      maliCutsceneGroup.visible = false;
+      scene3d.remove(maliCutsceneGroup);
+      maliCutsceneGroup = null;
+    }
+    if (sisterCutsceneGroup) {
+      sisterCutsceneGroup.visible = false;
+      scene3d.remove(sisterCutsceneGroup);
+      sisterCutsceneGroup = null;
+    }
+  }
+
+  function sisterWalksAway() {
+    if (!sisterCutsceneGroup) { killAllCutsceneModels(); returnCameraToPlayer(); return; }
+
+    const walkStart = sisterCutsceneGroup.position.clone();
+    const walkEnd = new THREE.Vector3(-1.0, 0, 3.5);
+
+    animateLerp(0, 1, 1500,
+      (e) => {
+        if (!sisterCutsceneGroup) return;
+        if (e < 0.15) {
+          sisterCutsceneGroup.rotation.y = -Math.PI * 0.5 + (Math.PI * 1.1) * smoothstep(e / 0.15);
+        }
+        sisterCutsceneGroup.position.lerpVectors(walkStart, walkEnd, e);
+        sisterCutsceneGroup.position.y = Math.abs(Math.sin(e * Math.PI * 5)) * 0.025;
+      },
+      () => {
+        killAllCutsceneModels();
+        returnCameraToPlayer();
+      }
+    );
+  }
+
+  function returnCameraToPlayer() {
+    killAllCutsceneModels();
+
+    const camStart = camera.position.clone();
+    const yawStart = yaw;
+    const pitchStart = pitch;
+
+    cameraAnimating = true;
+    animateLerp(0, 1, 1000,
+      (e) => {
+        camera.position.lerpVectors(camStart, savedCamPos, e);
+        yaw = yawStart + (savedCamYaw - yawStart) * e;
+        pitch = pitchStart + (savedCamPitch - pitchStart) * e;
+      },
+      () => {
+        killAllCutsceneModels();
+        cameraAnimating = false;
+        makeupCutsceneActive = false;
+        state.makeupDone = true;
+        refreshRoomZones();
+        showControls();
+        updateMissions();
+        document.getElementById('mission-tracker').style.display = '';
+      }
+    );
   }
 
   document.getElementById('cat-tap-btn').addEventListener('click', () => {
@@ -3564,48 +3924,7 @@
     }
   });
 
-  document.getElementById('makeup-tap-btn').addEventListener('click', () => {
-    if (makeupStep >= makeupSteps.length) return;
-
-    const step = makeupSteps[makeupStep];
-    state.makeupProgress = step.progress;
-    document.getElementById('makeup-progress').style.width = state.makeupProgress + '%';
-
-    // Show makeup layer
-    const layer = document.getElementById(step.id);
-    if (layer) layer.style.display = 'block';
-
-    // Spawn sparkle
-    const sparkles = document.getElementById('makeup-sparkles');
-    for (let i = 0; i < 3; i++) {
-      const s = document.createElement('div');
-      s.className = 'makeup-sparkle';
-      s.textContent = '✨';
-      s.style.left = (20 + Math.random() * 60) + '%';
-      s.style.top = (30 + Math.random() * 40) + '%';
-      s.style.animationDelay = (i * 0.1) + 's';
-      sparkles.appendChild(s);
-      setTimeout(() => s.remove(), 1000);
-    }
-
-    makeupStep++;
-
-    if (makeupStep < makeupSteps.length) {
-      document.getElementById('makeup-label').textContent = makeupSteps[makeupStep].label;
-    } else {
-      state.makeupDone = true;
-      document.getElementById('makeup-label').textContent = 'Fertig!';
-      document.getElementById('makeup-tap-btn').textContent = 'Weiter 💛';
-      document.getElementById('makeup-tap-btn').style.pointerEvents = 'none';
-      setTimeout(() => {
-        document.getElementById('overlay-makeup').classList.remove('active');
-        refreshRoomZones();
-        showControls();
-        updateMissions();
-        document.getElementById('mission-tracker').style.display = '';
-      }, 1800);
-    }
-  });
+  // Old 2D makeup overlay removed — now handled by 3D cutscene in startMakeup()
 
   function refreshRoomZones() {
     interactionZones = [];
@@ -3657,7 +3976,9 @@
     prevTime = now;
 
     if (state.currentScene === 'room' || state.currentScene === 'staircase') {
-      if (cameraAnimating && cameraTarget) {
+      if (makeupCutsceneActive) {
+        // 3D cutscene controls camera — skip movement and bounds
+      } else if (cameraAnimating && cameraTarget) {
         camera.position.lerp(cameraTarget, 0.05);
         const lookDir = new THREE.Vector3();
         lookDir.subVectors(cameraLookTarget, camera.position).normalize();
@@ -3705,7 +4026,7 @@
       camera.rotation.x = pitch;
 
       // Check interaction zones
-      if (!cameraAnimating && !state.windowViewing) {
+      if (!cameraAnimating && !state.windowViewing && !makeupCutsceneActive) {
         const prompt = document.getElementById('prompt');
         const interactBtnEl = document.getElementById('interact-btn');
         nearZone = null;
